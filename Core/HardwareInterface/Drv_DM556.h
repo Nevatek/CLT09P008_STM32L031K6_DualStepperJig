@@ -16,7 +16,13 @@
 
 typedef enum
 {
-	Rotate_Clockwise = 0,
+	STEPPER_MOTOR_IDLE = 0U,
+	STEPPER_MOTOR_RUNNING,
+}MOTOR_STATE;
+
+typedef enum
+{
+	Rotate_Clockwise = 0U,
 	Rotate_AntiClockwise,
 }ROTATION_DIRECTION;
 
@@ -28,15 +34,15 @@ typedef enum
 
 typedef enum
 {
-	MOTOR_MS_FULL_STEP,
-	MOTOR_MS_HALF_STEP,
-	MOTOR_MS_STEP_1_4,
-	MOTOR_MS_STEP_1_8,
-	MOTOR_MS_STEP_1_16,
-	MOTOR_MS_STEP_1_32 ,
-	MOTOR_MS_STEP_1_64,
-	MOTOR_MS_STEP_1_128,
-	MOTOR_MS_STEP_1_256,
+	MOTOR_MS_FULL_STEP = 1U,
+	MOTOR_MS_HALF_STEP = 2U,
+	MOTOR_MS_STEP_1_4 = 4U,
+	MOTOR_MS_STEP_1_8 = 8U,
+	MOTOR_MS_STEP_1_16 = 16U,
+	MOTOR_MS_STEP_1_32  = 32U,
+	MOTOR_MS_STEP_1_64 = 64U,
+	MOTOR_MS_STEP_1_128 = 128U,
+	MOTOR_MS_STEP_1_256 = 256U,
 }MOTOR_MICRO_STEP_SEL;
 
 typedef struct
@@ -54,7 +60,10 @@ typedef struct
 	uint16_t u8PulsePin;
 	uint16_t u8DirPin;
 	uint16_t u8EnablePin;
-	uint8_t bContinousRotationEnable;
+	uint8_t bContinousRotationEnable : 1U;
+	uint8_t bHomeSensEnable : 1U;
+	uint8_t : 6U;
+	MOTOR_STATE m_State;
 	void (*Callback_TimerComplete)(void *m_Inst);
 }Stepper;
 

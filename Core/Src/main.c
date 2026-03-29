@@ -94,16 +94,35 @@ UART_HandleTypeDef* GetInstance_UART2(void)
 .Returns :
 .Note : use this function for all major initilization
 ******************************************************************************/
+void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin)
+{
+	switch(GPIO_Pin)
+	{
+		case(HOME_SENS_OUT_1_Pin):
+		{
+			CallBack_HomeSensDetectMotorX();
+		}break;
+		case(HOME_SENS_OUT_2_Pin):
+		{
+			CallBack_HomeSensDetectMotorY();
+		}break;
+	}
+}
+/******************************.FUNCTION_HEADER.******************************
+.Purpose : This function serve as one time call function of application layer
+.Returns :
+.Note : use this function for all major initilization
+******************************************************************************/
 void HAL_USER_Timer_Handler(TIM_HandleTypeDef *htim)
 {
 	if(htim == GetInstance_Timer2())
 	{
-		Callback_StepperTimer_MotA();
+		Callback_StepperTimer_MotX();
 	}
 
 	if(htim == GetInstance_Timer21())
 	{
-		Callback_StepperTimer_MotB();
+		Callback_StepperTimer_MotY();
 	}
 }
 /* USER CODE END 0 */

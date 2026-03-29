@@ -10,6 +10,8 @@
 
 void App_StepperLinearGuide_Init(void);
 void App_StepperLinearGuide_Exe(void);
-void Callback_StepperTimer_MotA(void);
-void Callback_StepperTimer_MotB(void);
+void Callback_StepperTimer_MotX(void);
+void Callback_StepperTimer_MotY(void);
+void CallBack_HomeSensDetectMotorX(void);
+void CallBack_HomeSensDetectMotorY(void);
 #endif /* APPLICATION_APP_STEPPERLINEARGUIDE_H_ */

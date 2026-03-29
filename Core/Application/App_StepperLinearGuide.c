@@ -9,6 +9,7 @@ Author Date Description
 <Author name> <DDMMMYYYY> <changes made>*/
 /*Aldrin.Rebellow 29/03/2026 Initial Release*/
 #include "main.h"
+#include "Datatype.h"
 #include "Drv_DM556.h"
 #include "App_StepperLinearGuide.h"
 
@@ -19,7 +20,7 @@ Stepper g_StepperMotorY;
 .Returns :
 .Note : use this function for all major initilization
 ******************************************************************************/
-inline void Callback_StepperTimer_MotA(void)
+inline void Callback_StepperTimer_MotX(void)
 {
 	g_StepperMotorX.Callback_TimerComplete((Stepper *)&(g_StepperMotorX));
 }
@@ -28,9 +29,33 @@ inline void Callback_StepperTimer_MotA(void)
 .Returns :
 .Note : use this function for all major initilization
 ******************************************************************************/
-inline void Callback_StepperTimer_MotB(void)
+inline void Callback_StepperTimer_MotY(void)
 {
 	g_StepperMotorY.Callback_TimerComplete((Stepper *)&(g_StepperMotorY));
+}
+/******************************.FUNCTION_HEADER.******************************
+.Purpose : This function serve as one time call function of application layer
+.Returns :
+.Note : use this function for all major initilization
+******************************************************************************/
+inline void CallBack_HomeSensDetectMotorX(void)
+{
+	if(TRUE == g_StepperMotorX.bHomeSensEnable)
+	{
+		Stop_StepperMotor(&(g_StepperMotorX));
+	}
+}
+/******************************.FUNCTION_HEADER.******************************
+.Purpose : This function serve as one time call function of application layer
+.Returns :
+.Note : use this function for all major initilization
+******************************************************************************/
+inline void CallBack_HomeSensDetectMotorY(void)
+{
+	if(TRUE == g_StepperMotorY.bHomeSensEnable)
+	{
+		Stop_StepperMotor(&(g_StepperMotorY));
+	}
 }
 /******************************.FUNCTION_HEADER.******************************
 .Purpose : This function serve as one time call function of application layer
@@ -46,6 +71,7 @@ void App_StepperLinearGuide_Init(void)
 	g_StepperMotorX.u8DirPin = MOT1_DIR__Pin;
 	g_StepperMotorX.u8EnablePin = MOT1_DISABLE__Pin;
 	g_StepperMotorX.u8PulsePin = MOT1_PUL__Pin;
+	g_StepperMotorX.bHomeSensEnable = TRUE;/*Enable Home sensor by DEFAULT*/
 	Config_StepperTimer(&(g_StepperMotorX) ,
 			GetInstance_Timer2() , &Execute_PulseCallback , MOTOR_MS_STEP_1_64 , TMC_STEALTH_CHOP);
 
@@ -56,6 +82,7 @@ void App_StepperLinearGuide_Init(void)
 	g_StepperMotorY.u8DirPin = MOT2_DIR__Pin;
 	g_StepperMotorY.u8EnablePin = MOT2_DISABLE__Pin;
 	g_StepperMotorY.u8PulsePin = MOT2_PUL__Pin;
+	g_StepperMotorY.bHomeSensEnable = TRUE;/*Enable Home sensor by DEFAULT*/
 	Config_StepperTimer(&(g_StepperMotorY) ,
 			GetInstance_Timer21() , &Execute_PulseCallback , MOTOR_MS_STEP_1_64 , TMC_STEALTH_CHOP);
 

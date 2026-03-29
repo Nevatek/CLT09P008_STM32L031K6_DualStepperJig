@@ -8,7 +8,7 @@
 #include "main.h"
 #include "Drv_DM556.h"
 
-static double fMicroStepDividentVal = 0.0f;
+static double g_fMicroStepDividentVal = 0.0f;
 
 inline void Execute_PulseCallback(Stepper *pStepper)
 {
@@ -34,30 +34,7 @@ void Config_StepperTimer(Stepper *pStepper , TIM_HandleTypeDef *pTimer ,
 	pStepper->pTim = pTimer;
 	pStepper->Callback_TimerComplete = pCallback;
 
-	switch(m_uStepSel)
-	{
-		case (MOTOR_MS_STEP_1_8):
-		{
-			fMicroStepDividentVal = 8.0f;
-		}break;
-
-		case (MOTOR_MS_STEP_1_32):
-		{
-			fMicroStepDividentVal = 32.0f;
-		}break;
-
-		case (MOTOR_MS_STEP_1_64):
-		{
-			fMicroStepDividentVal = 64.0f;
-		}break;
-
-		case (MOTOR_MS_STEP_1_16):
-		{
-			fMicroStepDividentVal = 16.0f;
-		}break;
-		default:
-			break;
-	}
+	g_fMicroStepDividentVal = (float)m_uStepSel;
 
 	u32Prescalar = (uint32_t)(TIMER_FREQ_INPUT / DEFAULT_STEPPER_TIMER_FREQ);
 	__HAL_TIM_SET_PRESCALER(pStepper->pTim , u32Prescalar - 1U);
@@ -86,7 +63,7 @@ void Set_RpmOfMotor(Stepper *pStepper , uint32_t u32Rpm)
 	double u32Arr = 0.0f;
 	double u32Freq = 0.0f;
 	double fStepperAngle = 0.0f;
-	fStepperAngle = ((double)STEPPER_DEFAULT_ANGLE / (double)fMicroStepDividentVal);
+	fStepperAngle = ((double)STEPPER_DEFAULT_ANGLE / (double)g_fMicroStepDividentVal);
 	fStepperAngle /= 360.0f;/*Step per revelotion*/
 	fStepperAngle *= 60.0f;/*Conversion to minute*/
 
@@ -124,6 +101,7 @@ void Stop_StepperMotor(Stepper *pStepper)
 	pStepper->bContinousRotationEnable = 0U;
 	DisableStepper(pStepper);
 	HAL_TIM_Base_Stop(pStepper->pTim);
+	pStepper->m_State = STEPPER_MOTOR_IDLE;
 }
 void StartContinous_StepperMotor(Stepper *pStepper , uint32_t u32Rpm)
 {
@@ -137,5 +115,6 @@ void StartContinous_StepperMotor(Stepper *pStepper , uint32_t u32Rpm)
 void Start_StepperMotor(Stepper *pStepper)
 {
 	EnableStepper(pStepper);
+	pStepper->m_State = STEPPER_MOTOR_RUNNING;
 	HAL_TIM_Base_Start_IT(pStepper->pTim);
 }
