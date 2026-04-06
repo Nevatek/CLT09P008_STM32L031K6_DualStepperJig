@@ -61,8 +61,10 @@ UART_HandleTypeDef* GetInstance_UART2(void);
 /* Private defines -----------------------------------------------------------*/
 #define HOME_SENS_OUT_1_Pin GPIO_PIN_1
 #define HOME_SENS_OUT_1_GPIO_Port GPIOA
+#define HOME_SENS_OUT_1_EXTI_IRQn EXTI0_1_IRQn
 #define HOME_SENS_OUT_2_Pin GPIO_PIN_3
 #define HOME_SENS_OUT_2_GPIO_Port GPIOA
+#define HOME_SENS_OUT_2_EXTI_IRQn EXTI2_3_IRQn
 #define SW1_INP_Pin GPIO_PIN_4
 #define SW1_INP_GPIO_Port GPIOA
 #define SW2_INP_Pin GPIO_PIN_5

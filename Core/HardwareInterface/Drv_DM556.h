@@ -77,4 +77,5 @@ void StartContinous_StepperMotor(Stepper *pStepper , uint32_t u32Rpm);
 void SetDirection_Stepper(Stepper *pStepper , ROTATION_DIRECTION m_Dir);
 void EnableStepper(Stepper *pStepper);
 void DisableStepper(Stepper *pStepper);
+MOTOR_STATE HI_GetMotorState(Stepper *pStepper);
 #endif /* DRV_DM556_H_ */

@@ -8,6 +8,11 @@
 #ifndef APPLICATION_APPLICATIONLAYER_H_
 #define APPLICATION_APPLICATIONLAYER_H_
 
+typedef struct
+{
+	uint8_t u1ConfigParamUpdated : 1U;
+	uint8_t
+};
 void ApplicationLayer_Init(void);
 void ApplicationLayer_Exe(void);
 

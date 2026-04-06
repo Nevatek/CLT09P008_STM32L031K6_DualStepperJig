@@ -7,13 +7,21 @@
 #include "main.h"
 #include "Datatype.h"
 #include "Drv_Switch.h"
-
+/******************************.FUNCTION_HEADER.******************************
+.Purpose : This function serve as one time call function of application layer
+.Returns :
+.Note : use this function for all major initilization
+******************************************************************************/
 void ConfigSwitch(SWITCH *pSw , GPIO_TypeDef *pPort , uint16_t u8Pin)
 {
 	pSw->p_Port = pPort;
 	pSw->u8Pin = u8Pin;
 }
-
+/******************************.FUNCTION_HEADER.******************************
+.Purpose : This function serve as one time call function of application layer
+.Returns :
+.Note : use this function for all major initilization
+******************************************************************************/
 SW_STATE GetState_Switch(SWITCH *pSw)
 {
 	SW_STATE m_State;
