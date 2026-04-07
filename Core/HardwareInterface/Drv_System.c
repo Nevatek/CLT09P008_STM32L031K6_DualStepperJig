@@ -21,6 +21,7 @@ void Appl_SetTimerPeriod(TIM_HandleTypeDef *htim , uint32_t u32Period_us)
 	uint32_t u32ARR = 0U;
     uint32_t u32Timer_clk = 0U;
 
+    // Get APB1 or APB2 timer clock
     u32Timer_clk = HAL_RCC_GetPCLK1Freq();
 
     /*Target counter clock: 1 MHz (1 tick = 1 µs)*/
@@ -59,4 +60,3 @@ void ConvertArrayToBigEndian(uint16_t * array, size_t length)
         }
     }
 }
-

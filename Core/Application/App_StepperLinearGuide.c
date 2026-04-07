@@ -73,7 +73,8 @@ void App_StepperLinearGuide_Init(void)
 	g_StepperMotorX.u8PulsePin = MOT1_PUL__Pin;
 	g_StepperMotorX.bHomeSensEnable = TRUE;/*Enable Home sensor by DEFAULT*/
 	Config_StepperTimer(&(g_StepperMotorX) ,
-			GetInstance_Timer2() , &Execute_PulseCallback , MOTOR_MS_STEP_1_64 , TMC_STEALTH_CHOP);
+			GetInstance_Timer2() , &Execute_PulseCallback ,
+			MOTOR_MS_STEP_1_64 , TMC_STEALTH_CHOP);
 
 	/*Config Stepper 2*/
 	g_StepperMotorY.p_DirPort = MOT2_DIR__GPIO_Port;
@@ -84,10 +85,14 @@ void App_StepperLinearGuide_Init(void)
 	g_StepperMotorY.u8PulsePin = MOT2_PUL__Pin;
 	g_StepperMotorY.bHomeSensEnable = TRUE;/*Enable Home sensor by DEFAULT*/
 	Config_StepperTimer(&(g_StepperMotorY) ,
-			GetInstance_Timer21() , &Execute_PulseCallback , MOTOR_MS_STEP_1_64 , TMC_STEALTH_CHOP);
+			GetInstance_Timer21() , &Execute_PulseCallback ,
+			MOTOR_MS_STEP_1_64 , TMC_STEALTH_CHOP);
 
 	DisableStepper(&(g_StepperMotorX));
 	DisableStepper(&(g_StepperMotorY));
+
+	StartContinous_StepperMotor(&(g_StepperMotorX) , 50);
+	StartContinous_StepperMotor(&(g_StepperMotorY) , 50);
 }
 /******************************.FUNCTION_HEADER.******************************
 .Purpose : This function serve as one time call function of application layer

@@ -113,14 +113,14 @@ void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin)
 .Returns :
 .Note : use this function for all major initilization
 ******************************************************************************/
-void HAL_USER_Timer_Handler(TIM_HandleTypeDef *htim)
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	if(htim == GetInstance_Timer2())
+	if(TIM2 == htim->Instance)
 	{
 		Callback_StepperTimer_MotX();
 	}
 
-	if(htim == GetInstance_Timer21())
+	if(TIM21 == htim->Instance)
 	{
 		Callback_StepperTimer_MotY();
 	}
