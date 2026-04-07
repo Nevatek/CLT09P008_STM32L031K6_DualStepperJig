@@ -21,6 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "Drv_DM556.h"
 #include "App_StepperLinearGuide.h"
 #include "ApplicationLayer.h"
 /* USER CODE END Includes */

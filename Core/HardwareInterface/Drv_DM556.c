@@ -139,7 +139,6 @@ void Stop_StepperMotor(Stepper *pStepper)
 	pStepper->u32CurrStepCount = 0;
 	pStepper->u32TotalStepCount = 0;
 	pStepper->bContinousRotationEnable = 0U;
-	DisableStepper(pStepper);
 	HAL_TIM_Base_Stop(pStepper->pTim);
 	pStepper->m_State = STEPPER_MOTOR_IDLE;
 }
