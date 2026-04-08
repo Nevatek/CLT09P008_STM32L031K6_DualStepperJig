@@ -92,7 +92,7 @@ void App_StepperLinearGuide_Init(void)
 	DisableStepper(&(g_StepperMotorY));
 
 //	Rotate_StepperSteps(&(g_StepperMotorY) , 15210 , 30);
-	StartContinous_StepperMotor(&(g_StepperMotorY) , 230);
+//	StartContinous_StepperMotor(&(g_Stepp0erMotorY) , 230);
 }
 /******************************.FUNCTION_HEADER.******************************
 .Purpose : This function serve as one time call function of application layer

@@ -175,7 +175,7 @@ void Stop_StepperMotor(Stepper *pStepper)
 	pStepper->u32TotalStepCount = 0;
 	pStepper->bContinousRotationEnable = 0U;
 	HAL_TIM_Base_Stop(pStepper->pTim);
-	pStepper->m_State = STEPPER_MOTOR_IDLE;
+	pStepper->m_State = STEPPER_MOTOR_STOP;
 }
 /******************************.FUNCTION_HEADER.******************************
 .Purpose : This function serve as one time call function of application layer
