@@ -8,6 +8,9 @@
 #ifndef APPLICATION_APPLICATIONLAYER_H_
 #define APPLICATION_APPLICATIONLAYER_H_
 
+#define FLASH_INIT_FLAG 	(0xAA)
+#define FLASH_DEFAULT_FLAG 	(0xFF)
+
 typedef enum
 {
 	SYS_OPERATING_MODE_AUTO = 0U,
@@ -35,8 +38,7 @@ typedef struct
 
 typedef struct
 {
-	uint8_t u1ConfigParamUpdated : 1U;
-	uint8_t : 7U;
+	uint8_t u8FlashInitFlag;
 	SYS_MOTOR_MODE m_SystemMotorOperatingMode;
 	MOTOR_APP_CONFIG m_AppMotorX;
 	MOTOR_APP_CONFIG m_AppMotorY;
@@ -45,5 +47,5 @@ typedef struct
 void ApplicationLayer_Init(void);
 void ApplicationLayer_Exe(void);
 APPL_CONFIG* GetInstance_ApplConfig(void);
-
+void Callback_Appl_ConfigUpdated(SystemCofig_t *pConfig);
 #endif /* APPLICATION_APPLICATIONLAYER_H_ */

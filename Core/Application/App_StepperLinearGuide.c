@@ -91,8 +91,20 @@ void App_StepperLinearGuide_Init(void)
 	DisableStepper(&(g_StepperMotorX));
 	DisableStepper(&(g_StepperMotorY));
 
-	Rotate_StepperSteps(&(g_StepperMotorY) , 15210 , 30);
-//	StartContinous_StepperMotor(&(g_StepperMotorY) , 230);
+//	Rotate_StepperSteps(&(g_StepperMotorY) , 15210 , 30);
+	StartContinous_StepperMotor(&(g_StepperMotorY) , 230);
+}
+/******************************.FUNCTION_HEADER.******************************
+.Purpose : This function serve as one time call function of application layer
+.Returns :
+.Note : use this function for all major initilization
+******************************************************************************/
+void App_Disable_AllMotors(void)
+{
+	Stop_StepperMotor(&(g_StepperMotorX));
+	Stop_StepperMotor(&(g_StepperMotorY));
+	DisableStepper(&(g_StepperMotorX));
+	DisableStepper(&(g_StepperMotorY));
 }
 /******************************.FUNCTION_HEADER.******************************
 .Purpose : This function serve as one time call function of application layer
@@ -101,11 +113,11 @@ void App_StepperLinearGuide_Init(void)
 ******************************************************************************/
 void App_StepperLinearGuide_Exe(void)
 {
-	APPL_CONFIG *pApplCfg = GetInstance_ApplConfig();
+//	APPL_CONFIG *pApplCfg = GetInstance_ApplConfig();
 	/*
 	 * MOTOR X - START*
 	 */
-	if(TRUE == pApplCfg->m_AppMotorX.u1ApplEnabled)
+//	if(TRUE == pApplCfg->m_AppMotorX.u1ApplEnabled)
 	{
 		/*If motor is enabled and running*/
 	}

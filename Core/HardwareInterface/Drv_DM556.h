@@ -71,10 +71,13 @@ typedef struct
 void Execute_PulseCallback(Stepper *pStepper);
 void Config_StepperTimer(Stepper *pStepper , TIM_HandleTypeDef *pTimer , void *pCallback , MOTOR_MICRO_STEP_SEL m_uStepSel , TMC_MOTOR_MODE m_MotorMode);
 void Set_RpmOfMotor(Stepper *pStepper , uint32_t u32Rpm);
+void Set_FrequencyOfMotor(Stepper *pStepper , uint32_t u32FrequncyHz);
 void Rotate_StepperSteps(Stepper *pStepper , uint32_t u32Steps ,  uint32_t u32Rpm);
+void Rotate_StepperSteps_Freq(Stepper *pStepper , uint32_t u32Steps ,  uint32_t u32Freq);
 void Stop_StepperMotor(Stepper *pStepper);
 void Start_StepperMotor(Stepper *pStepper);
 void StartContinous_StepperMotor(Stepper *pStepper , uint32_t u32Rpm);
+void StartContinous_StepperMotor_Freq(Stepper *pStepper , uint32_t u32Freq);
 void SetDirection_Stepper(Stepper *pStepper , ROTATION_DIRECTION m_Dir);
 void EnableStepper(Stepper *pStepper);
 void DisableStepper(Stepper *pStepper);

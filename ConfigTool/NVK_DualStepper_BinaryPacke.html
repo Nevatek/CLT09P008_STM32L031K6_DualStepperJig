@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NVK — Dual Stepper Jig Controller</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --orange:      #f26522;
+  --orange-soft: #ff7c38;
+  --orange-glow: rgba(242,101,34,.25);
+  --orange-dim:  rgba(242,101,34,.1);
+  --orange-rim:  rgba(242,101,34,.22);
+
+  --green:       #016b79;
+  --green-light: #01909f;
+  --green-glow:  rgba(1,107,121,.25);
+  --green-dim:   rgba(1,107,121,.1);
+  --green-rim:   rgba(1,144,159,.2);
+
+  --bg:      #09090b;
+  --s1:      #0f1012;
+  --s2:      #141618;
+  --s3:      #1a1d20;
+  --border:  rgba(255,255,255,.07);
+  --border2: rgba(255,255,255,.11);
+
+  --t1: #f0f2f3;
+  --t2: #8a9299;
+  --t3: #3d4a50;
+
+  --err:  #f04040;
+  --warn: #e8a020;
+
+  --r:  10px;
+  --rs: 7px;
+  --font: 'Outfit', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--t1);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 55% 35% at 0% 0%, rgba(242,101,34,.07) 0%, transparent 60%),
+    radial-gradient(ellipse 45% 35% at 100% 100%, rgba(1,107,121,.08) 0%, transparent 55%);
+}
+
+/* ── Header ── */
+header {
+  position: sticky; top: 0; z-index: 200;
+  height: 60px;
+  background: rgba(9,9,11,.9);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 28px;
+}
+
+.hdr-title {
+  display: flex; align-items: baseline; gap: 8px;
+}
+.hdr-title-main {
+  font-family: var(--font);
+  font-size: 16px; font-weight: 800;
+  color: var(--t1); letter-spacing: 0.3px;
+}
+.hdr-title-main span { color: var(--orange); }
+
+.hdr-r { display: flex; align-items: center; gap: 10px; }
+
+.baud-sel {
+  background: var(--s2); border: 1px solid var(--border2);
+  color: var(--t2); font-family: var(--mono); font-size: 11px;
+  padding: 7px 12px; border-radius: 100px;
+  outline: none; cursor: pointer; transition: all .15s;
+}
+.baud-sel:hover, .baud-sel:focus { border-color: var(--orange-rim); color: var(--orange); }
+.baud-sel option { background: #141618; }
+
+.btn-conn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 20px; border-radius: 100px;
+  font-family: var(--font); font-size: 12px; font-weight: 600; letter-spacing: 0.4px;
+  cursor: pointer; transition: all .2s;
+  border: 1px solid var(--border2); background: var(--s2); color: var(--t2);
+}
+.btn-conn:hover { border-color: var(--orange-rim); color: var(--orange); }
+.btn-conn.on {
+  background: linear-gradient(135deg, #c44e12, var(--orange));
+  border-color: transparent; color: #fff;
+  box-shadow: 0 0 22px var(--orange-glow);
+}
+.cdot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--t3); flex-shrink: 0; transition: all .3s;
+}
+.btn-conn.on .cdot {
+  background: #fff; box-shadow: 0 0 8px rgba(255,255,255,.9);
+  animation: blink 2s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* ── Page ── */
+.page {
+  position: relative; z-index: 1;
+  max-width: 880px; margin: 0 auto;
+  padding: 32px 22px 64px;
+  display: flex; flex-direction: column; gap: 30px;
+}
+
+.banner {
+  display: none;
+  background: rgba(232,160,32,.07); border: 1px solid rgba(232,160,32,.25);
+  border-radius: var(--rs); padding: 10px 16px;
+  font-size: 12px; color: var(--warn);
+  align-items: center; gap: 8px;
+}
+
+/* ── Section header ── */
+.sec-hdr {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 16px;
+}
+.sec-hdr-line { flex: 1; height: 1px; background: linear-gradient(90deg, var(--border2), transparent); }
+.sec-label {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 2.5px; text-transform: uppercase;
+  color: var(--orange); white-space: nowrap;
+}
+
+/* ── Card ── */
+.card {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+  transition: border-color .22s, box-shadow .22s;
+  animation: rise .35s ease both;
+}
+.card:hover { border-color: var(--border2); box-shadow: 0 4px 32px rgba(0,0,0,.35); }
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.card.motor   { border-top: 2px solid var(--orange); }
+.card.control { border-top: 2px solid var(--green);  }
+
+.card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 15px 20px 13px;
+  border-bottom: 1px solid var(--border);
+  background: var(--s2);
+}
+.card-title { font-size: 15px; font-weight: 700; color: var(--t1); }
+
+.badge {
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 4px 11px; border-radius: 100px;
+}
+.badge-orange { background: var(--orange-dim); color: var(--orange);      border: 1px solid var(--orange-rim); }
+.badge-green  { background: var(--green-dim);  color: var(--green-light); border: 1px solid var(--green-rim);  }
+
+.card-body { padding: 20px; display: flex; flex-direction: column; gap: 18px; }
+
+/* ── Fields ── */
+.field { display: flex; flex-direction: column; gap: 7px; }
+.flbl {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 1.8px; text-transform: uppercase; color: var(--t2);
+}
+.finp {
+  background: var(--bg); border: 1px solid var(--border2);
+  color: var(--t1); font-family: var(--mono); font-size: 15px; font-weight: 500;
+  padding: 11px 14px; border-radius: var(--rs);
+  outline: none; width: 100%; transition: border-color .18s, box-shadow .18s;
+}
+.finp:focus { border-color: var(--orange); box-shadow: 0 0 0 3px var(--orange-dim); }
+.finp::-webkit-inner-spin-button,
+.finp::-webkit-outer-spin-button { display: none; }
+.finp { -moz-appearance: textfield; }
+
+/* ── Segmented ── */
+.seg {
+  display: flex;
+  background: var(--bg); border: 1px solid var(--border2);
+  border-radius: var(--rs); padding: 4px; gap: 4px;
+}
+.sbtn {
+  flex: 1; text-align: center; padding: 9px 8px; border-radius: 5px;
+  font-family: var(--font); font-size: 12px; font-weight: 600; letter-spacing: 0.3px;
+  cursor: pointer; border: none; background: transparent; color: var(--t2);
+  transition: all .18s;
+}
+.sbtn:hover { color: var(--t1); background: var(--s3); }
+.sbtn.on {
+  background: linear-gradient(135deg, #c44e12, var(--orange));
+  color: #fff; box-shadow: 0 2px 14px var(--orange-glow);
+}
+.sbtn.on.green-active {
+  background: linear-gradient(135deg, var(--green), var(--green-light));
+  box-shadow: 0 2px 14px var(--green-glow);
+}
+
+/* ── Toggle ── */
+.tog-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 14px 16px; border-radius: var(--rs);
+  background: var(--bg); border: 1px solid var(--border);
+  transition: border-color .2s, background .2s;
+}
+.tog-row.active { border-color: var(--green-rim); background: rgba(1,107,121,.06); }
+.tog-info { display: flex; flex-direction: column; gap: 3px; }
+.tog-name { font-size: 13px; font-weight: 600; color: var(--t1); }
+.tog-hint { font-size: 11px; color: var(--t2); line-height: 1.45; }
+
+.sw { position: relative; width: 46px; height: 26px; cursor: pointer; flex-shrink: 0; }
+.sw input { display: none; }
+.sw-track {
+  position: absolute; inset: 0;
+  background: var(--s3); border: 1px solid var(--border2);
+  border-radius: 13px; transition: all .22s;
+}
+.sw-knob {
+  position: absolute; top: 4px; left: 4px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--t3); transition: all .22s;
+  box-shadow: 0 1px 4px rgba(0,0,0,.5);
+}
+.sw input:checked ~ .sw-track { background: var(--green); border-color: var(--green-light); box-shadow: 0 0 12px var(--green-glow); }
+.sw input:checked ~ .sw-knob  { left: 24px; background: #fff; }
+
+/* ── Grid ── */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* ── Cycle ── */
+.cycle-body { padding: 22px; }
+
+.cycle-display {
+  position: relative; overflow: hidden;
+  padding: 22px 20px; border-radius: var(--rs);
+  background: var(--bg); border: 1px solid var(--border);
+}
+.cycle-display::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 100% 80% at 20% 50%, rgba(1,107,121,.1), transparent 65%);
+  pointer-events: none;
+}
+.cycle-num {
+  font-family: var(--mono); font-size: 50px; font-weight: 500;
+  color: var(--green-light); line-height: 1;
+  letter-spacing: -2px;
+  text-shadow: 0 0 28px var(--green-glow);
+  transition: all .4s; position: relative;
+}
+.cycle-bottom {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 10px;
+}
+.cycle-unit { font-size: 11px; color: var(--t2); letter-spacing: 1.5px; text-transform: uppercase; font-weight: 600; }
+.cycle-ts   { font-family: var(--mono); font-size: 10px; color: var(--t3); }
+
+/* ── Send ── */
+.send-body { padding: 22px; display: flex; flex-direction: column; gap: 18px; }
+.send-desc  { font-size: 13px; color: var(--t2); line-height: 1.7; }
+
+.btn-send {
+  width: 100%; padding: 14px; border-radius: var(--rs); border: none;
+  background: linear-gradient(135deg, #c44e12, var(--orange), var(--orange-soft));
+  color: #fff;
+  font-family: var(--font); font-size: 14px; font-weight: 700; letter-spacing: 0.5px;
+  cursor: pointer; transition: all .22s;
+  box-shadow: 0 4px 22px var(--orange-glow);
+  position: relative; overflow: hidden;
+}
+.btn-send::before {
+  content: '';
+  position: absolute; top: 0; left: -100%;
+  width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.12), transparent);
+  transition: left .5s;
+}
+.btn-send:hover:not(:disabled)::before { left: 150%; }
+.btn-send:hover:not(:disabled) { box-shadow: 0 6px 30px var(--orange-glow); transform: translateY(-1px); }
+.btn-send:active:not(:disabled) { transform: translateY(0); }
+.btn-send:disabled { opacity: .25; cursor: not-allowed; box-shadow: none; }
+
+.tx-status {
+  text-align: center; min-height: 18px;
+  font-family: var(--mono); font-size: 11px; color: var(--t2);
+}
+.tx-status.ok  { color: var(--green-light); }
+.tx-status.err { color: var(--err); }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--s3); border-radius: 4px; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 26px; right: 26px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 18px; border-radius: var(--rs);
+  font-size: 12px; font-weight: 600; letter-spacing: 0.3px;
+  background: var(--s2); border: 1px solid var(--border2); color: var(--t1);
+  transform: translateY(18px) scale(.96); opacity: 0;
+  transition: all .28s cubic-bezier(.34,1.4,.64,1);
+  pointer-events: none; z-index: 999;
+  box-shadow: 0 10px 36px rgba(0,0,0,.5);
+}
+.toast.show { transform: translateY(0) scale(1); opacity: 1; }
+.toast.ok   { border-color: var(--green-rim);          color: var(--green-light); }
+.toast.err  { border-color: rgba(240,64,64,.3);         color: var(--err); }
+.toast.info { border-color: var(--orange-rim);          color: var(--orange); }
+.tdot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+@media (max-width: 620px) {
+  .grid2 { grid-template-columns: 1fr; }
+  header { padding: 0 16px; }
+  .page { padding: 24px 14px 56px; }
+  .cycle-num { font-size: 38px; }
+}
+
+/* ── Settings button ── */
+.btn-settings {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: var(--rs);
+  border: 1px solid var(--border2); background: var(--s2);
+  color: var(--t2); cursor: pointer; transition: all .18s; flex-shrink: 0;
+}
+.btn-settings:hover { border-color: var(--orange-rim); color: var(--orange); }
+.btn-settings svg { width: 16px; height: 16px; }
+
+/* ── Drawer overlay ── */
+.drawer-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,.65);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  opacity: 0; pointer-events: none; transition: opacity .25s;
+}
+.drawer-overlay.open { opacity: 1; pointer-events: all; }
+
+/* ── Drawer ── */
+.drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 501;
+  width: 440px; max-width: 95vw;
+  background: var(--s1); border-left: 1px solid var(--border2);
+  display: flex; flex-direction: column;
+  transform: translateX(100%);
+  transition: transform .28s cubic-bezier(.4,0,.2,1);
+  box-shadow: -8px 0 40px rgba(0,0,0,.5);
+}
+.drawer.open { transform: translateX(0); }
+.drawer-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px; border-bottom: 1px solid var(--border);
+  background: var(--s2); flex-shrink: 0;
+}
+.drawer-title { font-size: 14px; font-weight: 700; color: var(--t1); }
+.drawer-close {
+  width: 30px; height: 30px; border-radius: 6px;
+  border: 1px solid var(--border2); background: transparent;
+  color: var(--t2); cursor: pointer; font-size: 15px;
+  display: flex; align-items: center; justify-content: center; transition: all .15s;
+}
+.drawer-close:hover { border-color: var(--err); color: var(--err); }
+.drawer-body {
+  flex: 1; overflow-y: auto; padding: 22px;
+  display: flex; flex-direction: column; gap: 20px;
+}
+.help-sec { display: flex; flex-direction: column; gap: 12px; }
+.help-heading {
+  font-size: 10px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--orange);
+}
+.help-desc { font-size: 12px; color: var(--t2); line-height: 1.7; }
+.divider-line { height: 1px; background: var(--border); }
+.json-block {
+  background: var(--bg); border: 1px solid var(--border2);
+  border-left: 3px solid var(--green); border-radius: var(--rs); padding: 14px 16px;
+}
+.json-block.tx { border-left-color: var(--orange); }
+.jlabel {
+  font-family: var(--mono); font-size: 9px; font-weight: 600;
+  letter-spacing: 1.8px; text-transform: uppercase; margin-bottom: 10px;
+}
+.json-block.tx .jlabel { color: var(--orange); }
+.json-block:not(.tx) .jlabel { color: var(--green-light); }
+.json-block pre {
+  font-family: var(--mono); font-size: 11.5px; color: var(--t1);
+  line-height: 1.8; white-space: pre; overflow-x: auto;
+}
+.jk { color: var(--green-light); }
+.js { color: #f0c080; }
+.jn { color: #c8a2f0; }
+.jb { color: var(--orange); }
+
+/* ── Serial Log ── */
+.log-section { margin-top: 0; }
+.log-card {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+  animation: rise .35s ease both;
+  animation-delay: .32s;
+}
+.log-card:hover { border-color: var(--border2); }
+.log-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 20px;
+  background: var(--s2);
+  border-bottom: 1px solid var(--border);
+}
+.log-head-left { display: flex; align-items: center; gap: 10px; }
+.log-title {
+  font-size: 13px; font-weight: 700; color: var(--t1);
+}
+.log-count {
+  font-family: var(--mono); font-size: 10px;
+  color: var(--t3); padding: 2px 8px;
+  background: var(--bg); border: 1px solid var(--border2);
+  border-radius: 100px;
+}
+.log-clear {
+  font-family: var(--font); font-size: 11px; font-weight: 500;
+  color: var(--t3); background: none; border: 1px solid var(--border2);
+  padding: 4px 12px; border-radius: 100px;
+  cursor: pointer; transition: all .15s;
+}
+.log-clear:hover { border-color: var(--err); color: var(--err); }
+
+.log-body {
+  padding: 8px 0;
+  max-height: 220px; overflow-y: auto;
+  display: flex; flex-direction: column;
+}
+.log-entry {
+  display: grid;
+  grid-template-columns: 68px 34px 1fr;
+  align-items: baseline;
+  gap: 0;
+  padding: 5px 20px;
+  font-size: 11.5px; line-height: 1.5;
+  border-bottom: 1px solid transparent;
+  transition: background .12s;
+}
+.log-entry:hover { background: var(--s2); }
+.log-entry:last-child { border-bottom: none; }
+
+.log-ts   { font-family: var(--mono); font-size: 10px; color: var(--t3); }
+.log-dir  { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .8px; }
+.log-msg  { font-family: var(--mono); font-size: 11px; word-break: break-all; color: var(--t2); }
+
+.log-entry.tx .log-dir  { color: var(--orange); }
+.log-entry.tx .log-msg  { color: rgba(242,101,34,.75); }
+.log-entry.rx .log-dir  { color: var(--green-light); }
+.log-entry.rx .log-msg  { color: rgba(1,144,159,.9); }
+.log-entry.err .log-dir { color: var(--err); }
+.log-entry.err .log-msg { color: var(--err); }
+.log-entry.info .log-dir{ color: var(--t2); }
+.log-entry.info .log-msg{ color: var(--t3); }
+
+.log-empty {
+  padding: 20px; text-align: center;
+  font-size: 12px; color: var(--t3);
+  font-family: var(--mono);
+}
+
+/* ── Select dropdown ── */
+.fsel {
+  background: var(--bg); border: 1px solid var(--border2);
+  color: var(--t1); font-family: var(--mono); font-size: 13px; font-weight: 500;
+  padding: 11px 14px; border-radius: var(--rs);
+  outline: none; width: 100%;
+  cursor: pointer; transition: border-color .18s, box-shadow .18s;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a9299' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 34px;
+}
+.fsel:focus { border-color: var(--orange); box-shadow: 0 0 0 3px var(--orange-dim); }
+.fsel option { background: #141618; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-title">
+    <span class="hdr-title-main">Dual Channel <span>Stepper</span> Jig Controller</span>
+  </div>
+  <div class="hdr-r">
+    <select class="baud-sel" id="baudrateSelect">
+      <option value="9600">9600 baud</option>
+      <option value="115200">115200 baud</option>
+    </select>
+    <button class="btn-conn" id="btnConnect" onclick="toggleConnect()">
+      <span class="cdot"></span>
+      <span id="connLabel">Connect</span>
+    </button>
+    <button class="btn-settings" onclick="openDrawer()" title="Settings &amp; Help">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<!-- Drawer overlay -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+
+<!-- Settings drawer -->
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <span class="drawer-title">Settings &amp; Help</span>
+    <button class="drawer-close" onclick="closeDrawer()">&#10005;</button>
+  </div>
+  <div class="drawer-body">
+
+    <div class="help-sec">
+      <div class="help-heading">&#128225; Binary Packet Protocol</div>
+      <p class="help-desc">All communication uses fixed-framing binary packets over UART. Every packet is framed with a Start-of-Packet byte, a command byte, a data-length byte, up to 255 data bytes, and a 2-byte CRC-16/CCITT checksum.</p>
+    </div>
+
+    <div class="divider-line"></div>
+
+    <div class="help-sec">
+      <div class="help-heading">&#9632; Packet Frame</div>
+      <div class="json-block tx">
+        <div class="jlabel">&#9654; Structure</div>
+        <pre><span class="jk">SOP     </span> <span class="jn">0xAA</span>          <span style="color:var(--t3)">1 byte  — Start of packet</span>
+<span class="jk">CMD     </span> <span class="jn">0x01–0x04</span>     <span style="color:var(--t3)">1 byte  — Command ID</span>
+<span class="jk">DATALEN </span> <span class="jn">0x00–0xFF</span>     <span style="color:var(--t3)">1 byte  — Payload length</span>
+<span class="jk">DATA    </span> <span class="jn">…</span>             <span style="color:var(--t3)">0–255 bytes</span>
+<span class="jk">CRC1    </span> <span class="jn">high byte</span>     <span style="color:var(--t3)">CRC-16/CCITT of CMD+DATALEN+DATA</span>
+<span class="jk">CRC2    </span> <span class="jn">low byte</span>      <span style="color:var(--t3)">CRC-16/CCITT of CMD+DATALEN+DATA</span></pre>
+      </div>
+    </div>
+
+    <div class="divider-line"></div>
+
+    <div class="help-sec">
+      <div class="help-heading">&#8593; Transmit &mdash; App &rarr; Device</div>
+      <p class="help-desc">Sent when <strong style="color:var(--t1)">Send Configuration</strong> is pressed. Both motors stop immediately on receipt.</p>
+      <div class="json-block tx">
+        <div class="jlabel">&#9654; CMD 0x01 — CFG (17 bytes payload, little-endian)</div>
+        <pre><span class="jk">Byte 00   </span><span class="jn">M1 Steps</span>  <span style="color:var(--t3)">uint16 LE (lo)</span>
+<span class="jk">Byte 01   </span><span class="jn">M1 Steps</span>  <span style="color:var(--t3)">uint16 LE (hi)</span>
+<span class="jk">Byte 02   </span><span class="jn">M1 Dir   </span>  <span style="color:var(--t3)">0x00=CW  0x01=CCW</span>
+<span class="jk">Byte 03   </span><span class="jn">M1 Home  </span>  <span style="color:var(--t3)">0x00=off 0x01=on</span>
+<span class="jk">Byte 04   </span><span class="jn">M1 Mode  </span>  <span style="color:var(--t3)">0x00=AUTO 0x01=MANUAL</span>
+<span class="jk">Byte 05   </span><span class="jn">M1 µStep </span>  <span style="color:var(--t3)">log2(divisor): 0=full … 8=1/256</span>
+<span class="jk">Byte 06–07</span><span class="jn">M1 Freq  </span>  <span style="color:var(--t3)">uint16 LE Hz</span>
+<span class="jk">Byte 08   </span><span class="jn">M2 Steps</span>  <span style="color:var(--t3)">uint16 LE (lo)</span>
+<span class="jk">Byte 09   </span><span class="jn">M2 Steps</span>  <span style="color:var(--t3)">uint16 LE (hi)</span>
+<span class="jk">Byte 10   </span><span class="jn">M2 Dir   </span>  <span style="color:var(--t3)">0x00=CW  0x01=CCW</span>
+<span class="jk">Byte 11   </span><span class="jn">M2 Home  </span>  <span style="color:var(--t3)">0x00=off 0x01=on</span>
+<span class="jk">Byte 12   </span><span class="jn">M2 Mode  </span>  <span style="color:var(--t3)">0x00=AUTO 0x01=MANUAL</span>
+<span class="jk">Byte 13   </span><span class="jn">M2 µStep </span>  <span style="color:var(--t3)">log2(divisor): 0=full … 8=1/256</span>
+<span class="jk">Byte 14–15</span><span class="jn">M2 Freq  </span>  <span style="color:var(--t3)">uint16 LE Hz</span>
+<span class="jk">Byte 16   </span><span class="jn">Sync     </span>  <span style="color:var(--t3)">0x00=independent 0x01=lockstep</span></pre>
+      </div>
+    </div>
+
+    <div class="divider-line"></div>
+
+    <div class="help-sec">
+      <div class="help-heading">&#8595; Receive &mdash; Device &rarr; App</div>
+      <p class="help-desc">Device responds with a framed binary packet. CMD byte identifies the response type.</p>
+      <div class="json-block">
+        <div class="jlabel">&#10003; CMD 0x02 — ACK (0 bytes data)</div>
+        <pre><span class="jk">AA 02 00 </span><span class="jn">CRC1 CRC2</span>   <span style="color:var(--t3)">Config accepted</span></pre>
+      </div>
+      <div class="json-block" style="margin-top:10px">
+        <div class="jlabel">&#10005; CMD 0x03 — ERR (1 byte data)</div>
+        <pre><span class="jk">AA 03 01 </span><span class="jn">ERR_CODE</span><span class="jk"> CRC1 CRC2</span>
+<span style="color:var(--t3)">  0x01 = invalid steps
+  0x02 = invalid frequency
+  0x03 = CRC mismatch
+  0xFF = generic error</span></pre>
+      </div>
+    </div>
+
+    <div class="divider-line"></div>
+
+    <div class="help-sec">
+      <div class="help-heading">&#8595; Receive &mdash; Cycle Count</div>
+      <p class="help-desc">After ACK, device sends EEPROM cycle counts for both motors.</p>
+      <div class="json-block">
+        <div class="jlabel">&#8635; CMD 0x04 — CYC (8 bytes data, little-endian)</div>
+        <pre><span class="jk">Byte 00–03 </span><span class="jn">M1 cycles</span>  <span style="color:var(--t3)">uint32 LE</span>
+<span class="jk">Byte 04–07 </span><span class="jn">M2 cycles</span>  <span style="color:var(--t3)">uint32 LE</span></pre>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="page">
+
+  <div class="banner" id="noSerialBanner">
+    ⚠ Web Serial unavailable — use Chrome or Edge 89+. Running in simulation mode.
+  </div>
+
+  <!-- ── Cycle Counts ── -->
+  <div>
+    <div class="sec-hdr">
+      <span class="sec-label">Cycle Count</span>
+      <div class="sec-hdr-line"></div>
+    </div>
+    <div class="grid2">
+
+      <div class="card control" style="animation-delay:.04s">
+        <div class="card-head">
+          <span class="card-title">Motor 1 — Cycles</span>
+          <span class="badge badge-orange">Axis A</span>
+        </div>
+        <div class="cycle-body">
+          <div class="cycle-display">
+            <div class="cycle-num" id="cycleValue1">——</div>
+            <div class="cycle-bottom">
+              <span class="cycle-unit">Total Cycles</span>
+              <span class="cycle-ts" id="cycleTs1">Not read</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card control" style="animation-delay:.08s">
+        <div class="card-head">
+          <span class="card-title">Motor 2 — Cycles</span>
+          <span class="badge badge-orange">Axis B</span>
+        </div>
+        <div class="cycle-body">
+          <div class="cycle-display">
+            <div class="cycle-num" id="cycleValue2">——</div>
+            <div class="cycle-bottom">
+              <span class="cycle-unit">Total Cycles</span>
+              <span class="cycle-ts" id="cycleTs2">Not read</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Motors ── -->
+  <div>
+    <div class="sec-hdr">
+      <span class="sec-label">Motor Configuration</span>
+      <div class="sec-hdr-line"></div>
+    </div>
+    <div class="grid2">
+
+      <!-- Motor 1 -->
+      <div class="card motor" style="animation-delay:.04s">
+        <div class="card-head">
+          <span class="card-title">Motor 1</span>
+          <span class="badge badge-orange">Axis A</span>
+        </div>
+        <div class="card-body">
+          <div class="field">
+            <span class="flbl">Number of Steps</span>
+            <input class="finp" type="number" id="m1_steps" value="200" min="1" max="99999" oninput="syncState()">
+          </div>
+          <div class="field">
+            <span class="flbl">Direction Towards Home</span>
+            <div class="seg">
+              <button class="sbtn on" id="m1_cw"  onclick="setDir(1,'CW')">▶ CW</button>
+              <button class="sbtn"    id="m1_ccw" onclick="setDir(1,'CCW')">◀ CCW</button>
+            </div>
+          </div>
+          <div class="field">
+            <span class="flbl">Operating Mode</span>
+            <div class="seg">
+              <button class="sbtn on green-active" id="m1_auto"   onclick="setMode(1,'AUTO')">Auto</button>
+              <button class="sbtn"                 id="m1_manual" onclick="setMode(1,'MANUAL')">Manual</button>
+            </div>
+          </div>
+          <div class="field">
+            <span class="flbl">Microstep</span>
+            <select class="fsel" id="m1_ustep" onchange="syncState()">
+              <option value="1">Full Step (1)</option>
+              <option value="2">Half Step (1/2)</option>
+              <option value="4">Quarter Step (1/4)</option>
+              <option value="8">1/8 Step</option>
+              <option value="16">1/16 Step</option>
+              <option value="32">1/32 Step</option>
+              <option value="64">1/64 Step</option>
+              <option value="128">1/128 Step</option>
+              <option value="256">1/256 Step</option>
+            </select>
+          </div>
+          <div class="field">
+            <span class="flbl">Frequency (Hz)</span>
+            <input class="finp" type="number" id="m1_freq" value="1000" min="1" max="100000" oninput="syncState()">
+          </div>
+          <div class="tog-row" id="m1_togrow">
+            <div class="tog-info">
+              <span class="tog-name">Home Position</span>
+              <span class="tog-hint" id="m1_hint">Disabled — equal steps both ways</span>
+            </div>
+            <label class="sw">
+              <input type="checkbox" id="m1_home">
+              <div class="sw-track"></div>
+              <div class="sw-knob"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Motor 2 -->
+      <div class="card motor" style="animation-delay:.10s">
+        <div class="card-head">
+          <span class="card-title">Motor 2</span>
+          <span class="badge badge-orange">Axis B</span>
+        </div>
+        <div class="card-body">
+          <div class="field">
+            <span class="flbl">Number of Steps</span>
+            <input class="finp" type="number" id="m2_steps" value="200" min="1" max="99999" oninput="syncState()">
+          </div>
+          <div class="field">
+            <span class="flbl">Direction Towards Home</span>
+            <div class="seg">
+              <button class="sbtn on" id="m2_cw"  onclick="setDir(2,'CW')">▶ CW</button>
+              <button class="sbtn"    id="m2_ccw" onclick="setDir(2,'CCW')">◀ CCW</button>
+            </div>
+          </div>
+          <div class="field">
+            <span class="flbl">Operating Mode</span>
+            <div class="seg">
+              <button class="sbtn on green-active" id="m2_auto"   onclick="setMode(2,'AUTO')">Auto</button>
+              <button class="sbtn"                 id="m2_manual" onclick="setMode(2,'MANUAL')">Manual</button>
+            </div>
+          </div>
+          <div class="field">
+            <span class="flbl">Microstep</span>
+            <select class="fsel" id="m2_ustep" onchange="syncState()">
+              <option value="1">Full Step (1)</option>
+              <option value="2">Half Step (1/2)</option>
+              <option value="4">Quarter Step (1/4)</option>
+              <option value="8">1/8 Step</option>
+              <option value="16">1/16 Step</option>
+              <option value="32">1/32 Step</option>
+              <option value="64">1/64 Step</option>
+              <option value="128">1/128 Step</option>
+              <option value="256">1/256 Step</option>
+            </select>
+          </div>
+          <div class="field">
+            <span class="flbl">Frequency (Hz)</span>
+            <input class="finp" type="number" id="m2_freq" value="1000" min="1" max="100000" oninput="syncState()">
+          </div>
+          <div class="tog-row" id="m2_togrow">
+            <div class="tog-info">
+              <span class="tog-name">Home Position</span>
+              <span class="tog-hint" id="m2_hint">Disabled — equal steps both ways</span>
+            </div>
+            <label class="sw">
+              <input type="checkbox" id="m2_home">
+              <div class="sw-track"></div>
+              <div class="sw-knob"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Control ── -->
+  <div>
+    <div class="sec-hdr">
+      <span class="sec-label">Control</span>
+      <div class="sec-hdr-line"></div>
+    </div>
+
+    <!-- Sync — full width -->
+    <div class="card control" style="animation-delay:.20s; margin-bottom: 16px;">
+      <div class="card-head">
+        <span class="card-title">Motor Synchronisation</span>
+        <span class="badge badge-green">Common</span>
+      </div>
+      <div class="send-body">
+        <div class="tog-row" id="sync_togrow">
+          <div class="tog-info">
+            <span class="tog-name">Synchronise Motors</span>
+            <span class="tog-hint" id="sync_hint">Disabled — motors run independently</span>
+          </div>
+          <label class="sw">
+            <input type="checkbox" id="sync_toggle">
+            <div class="sw-track"></div>
+            <div class="sw-knob"></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Send — full width -->
+    <div class="card control" style="animation-delay:.28s">
+      <div class="card-head">
+        <span class="card-title">Send Config</span>
+
+      </div>
+      <div class="send-body">
+        <p class="send-desc"><span style="color:var(--orange);font-weight:600;">⚠ Both motors will be forced to stop when parameters are updated.</span></p>
+        <button class="btn-send" id="btnSend" onclick="sendConfig()" disabled>
+          Send Configuration
+        </button>
+        <div class="tx-status" id="txStatus"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Serial Log ── -->
+  <div class="log-section">
+    <div class="sec-hdr">
+      <span class="sec-label">Serial Log</span>
+      <div class="sec-hdr-line"></div>
+    </div>
+    <div class="log-card">
+      <div class="log-head">
+        <div class="log-head-left">
+          <span class="log-title">Activity</span>
+          <span class="log-count" id="logCount">0 / 5</span>
+        </div>
+        <button class="log-clear" onclick="clearLog()">Clear</button>
+      </div>
+      <div class="log-body" id="logBody">
+        <div class="log-empty">No activity yet</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast">
+  <span class="tdot"></span>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  NVK — Binary Packet Protocol
+//  Frame: SOP(1) | CMD(1) | DATALEN(1) | DATA(0-255) | CRC1(1) | CRC2(1)
+//  SOP = 0xAA
+//  CRC = CRC-16/CCITT (poly 0x1021, init 0xFFFF) over CMD+DATALEN+DATA
+// ════════════════════════════════════════════════════════════════
+
+const SOP  = 0xAA;
+const CMD_CFG = 0x01;   // App → Device  : send motor config
+const CMD_ACK = 0x02;   // Device → App  : config accepted
+const CMD_ERR = 0x03;   // Device → App  : error, 1 byte error code
+const CMD_CYC = 0x04;   // Device → App  : cycle counts (8 bytes, 2×uint32 LE)
+
+const ERR_CODES = {
+  0x01: 'Invalid steps',
+  0x02: 'Invalid frequency',
+  0x03: 'CRC mismatch',
+  0xFF: 'Generic error',
+};
+
+// ── CRC-16/CCITT ────────────────────────────────────────────────
+function crc16(bytes) {
+  let crc = 0xFFFF;
+  for (const b of bytes) {
+    crc ^= (b << 8);
+    for (let i = 0; i < 8; i++) {
+      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
+      crc &= 0xFFFF;
+    }
+  }
+  return crc;
+}
+
+// ── Build a framed packet ────────────────────────────────────────
+function buildPacket(cmd, data) {
+  const dataLen = data.length;
+  // CRC covers CMD + DATALEN + DATA
+  const crcInput = [cmd, dataLen, ...data];
+  const crc = crc16(crcInput);
+  return new Uint8Array([SOP, cmd, dataLen, ...data, (crc >> 8) & 0xFF, crc & 0xFF]);
+}
+
+// ── Encode motor config into 17-byte payload (little-endian) ────
+//  M1: Steps(2LE) Dir(1) Home(1) Mode(1) Ustep(1) Freq(2LE) = 8 bytes
+//  M2: same layout                                            = 8 bytes
+//  Sync: (1)                                                  = 1 byte
+//  Total payload = 17 bytes
+function buildCfgPayload() {
+  syncState();
+  const buf = [];
+  ['m1','m2'].forEach(m => {
+    const mo = S[m];
+    const steps = Math.min(mo.steps, 0xFFFF);
+    buf.push(steps & 0xFF, (steps >> 8) & 0xFF);           // Steps uint16 LE
+    buf.push(mo.dir  === 'CW'   ? 0x00 : 0x01);            // Dir
+    buf.push(mo.home            ? 0x01 : 0x00);             // Home
+    buf.push(mo.mode === 'AUTO' ? 0x00 : 0x01);            // Mode
+    buf.push(Math.round(Math.log2(Math.max(1, mo.ustep)))); // µStep log2
+    const freq = Math.min(mo.freq, 0xFFFF);
+    buf.push(freq & 0xFF, (freq >> 8) & 0xFF);             // Freq uint16 LE
+  });
+  buf.push(S.sync ? 0x01 : 0x00);                          // Byte 16 — sync
+  return buf;
+}
+
+// ── Hex-dump helper for log ──────────────────────────────────────
+function hexDump(bytes) {
+  return Array.from(bytes).map(b => b.toString(16).toUpperCase().padStart(2,'0')).join(' ');
+}
+
+// ════════════════════════════════════════════════════════════════
+//  RX state machine — reassemble packets from raw byte stream
+// ════════════════════════════════════════════════════════════════
+const RX_STATE = { WAIT_SOP:0, WAIT_CMD:1, WAIT_LEN:2, WAIT_DATA:3, WAIT_CRC1:4, WAIT_CRC2:5 };
+let rxState = RX_STATE.WAIT_SOP;
+let rxCmd=0, rxLen=0, rxData=[], rxCrc1=0;
+
+function rxFeed(byte) {
+  switch(rxState) {
+    case RX_STATE.WAIT_SOP:
+      if (byte === SOP) rxState = RX_STATE.WAIT_CMD;
+      break;
+    case RX_STATE.WAIT_CMD:
+      rxCmd = byte; rxState = RX_STATE.WAIT_LEN;
+      break;
+    case RX_STATE.WAIT_LEN:
+      rxLen = byte; rxData = [];
+      rxState = rxLen === 0 ? RX_STATE.WAIT_CRC1 : RX_STATE.WAIT_DATA;
+      break;
+    case RX_STATE.WAIT_DATA:
+      rxData.push(byte);
+      if (rxData.length === rxLen) rxState = RX_STATE.WAIT_CRC1;
+      break;
+    case RX_STATE.WAIT_CRC1:
+      rxCrc1 = byte; rxState = RX_STATE.WAIT_CRC2;
+      break;
+    case RX_STATE.WAIT_CRC2: {
+      const rxCrc2 = byte;
+      const received = (rxCrc1 << 8) | rxCrc2;
+      const expected = crc16([rxCmd, rxLen, ...rxData]);
+      rxState = RX_STATE.WAIT_SOP;     // reset for next packet
+      if (received !== expected) {
+        addLog('err', `CRC fail — got ${received.toString(16).toUpperCase()} expected ${expected.toString(16).toUpperCase()}`);
+      } else {
+        handlePacket(rxCmd, rxData);
+      }
+      break;
+    }
+  }
+}
+
+function handlePacket(cmd, data) {
+  const raw = `CMD=0x${cmd.toString(16).toUpperCase().padStart(2,'0')} DATA=[${hexDump(data)}]`;
+  addLog('rx', raw);
+
+  switch(cmd) {
+    case CMD_ACK:
+      clearResponseTimer();
+      setTx('Configuration accepted ✓', 'ok');
+      toast('Config sent successfully', 'ok');
+      break;
+
+    case CMD_ERR: {
+      clearResponseTimer();
+      const code = data[0] ?? 0xFF;
+      const msg  = ERR_CODES[code] || `Error 0x${code.toString(16).toUpperCase()}`;
+      setTx(`Device error: ${msg}`, 'err');
+      toast('Device error', 'err');
+      break;
+    }
+
+    case CMD_CYC: {
+      if (data.length >= 8) {
+        const m1 = (data[0]) | (data[1]<<8) | (data[2]<<16) | (data[3]<<24);
+        const m2 = (data[4]) | (data[5]<<8) | (data[6]<<16) | (data[7]<<24);
+        const ts = new Date().toLocaleTimeString();
+        document.getElementById('cycleValue1').textContent = (m1>>>0).toLocaleString();
+        document.getElementById('cycleTs1').textContent    = ts;
+        document.getElementById('cycleValue2').textContent = (m2>>>0).toLocaleString();
+        document.getElementById('cycleTs2').textContent    = ts;
+        toast('Cycles updated', 'ok');
+      }
+      break;
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  Serial Log config
+// ════════════════════════════════════════════════════════════════
+const MAX_LOG = 5;
+const logQueue = [];
+
+const S = {
+  m1: { steps:200, dir:'CW', home:false, mode:'AUTO', ustep:1, freq:1000 },
+  m2: { steps:200, dir:'CW', home:false, mode:'AUTO', ustep:1, freq:1000 },
+  sync: false,
+};
+let port=null, writer=null, reader=null, connected=false;
+
+window.onload = () => {
+  if (!('serial' in navigator)) document.getElementById('noSerialBanner').style.display='flex';
+  ['m1','m2'].forEach(m => {
+    document.getElementById(`${m}_home`).addEventListener('change', function() {
+      S[m].home = this.checked;
+      document.getElementById(`${m}_hint`).textContent = this.checked
+        ? 'Enabled — opto slot sensor active, returns home'
+        : 'Disabled — equal steps both ways';
+      document.getElementById(`${m}_togrow`).classList.toggle('active', this.checked);
+    });
+  });
+  document.getElementById('sync_toggle').addEventListener('change', function() {
+    S.sync = this.checked;
+    document.getElementById('sync_togrow').classList.toggle('active', this.checked);
+    document.getElementById('sync_hint').textContent = this.checked
+      ? 'Enabled — both motors run in lockstep'
+      : 'Disabled — motors run independently';
+  });
+};
+
+function syncState() {
+  ['m1','m2'].forEach(m => {
+    const v = parseInt(document.getElementById(`${m}_steps`).value, 10);
+    S[m].steps = isNaN(v) ? 0 : Math.max(0, v);
+    const u = parseInt(document.getElementById(`${m}_ustep`).value, 10);
+    S[m].ustep = isNaN(u) ? 1 : u;
+    const f = parseInt(document.getElementById(`${m}_freq`).value, 10);
+    S[m].freq = isNaN(f) ? 1 : Math.max(1, f);
+  });
+}
+
+function setDir(motor, dir) {
+  const m = `m${motor}`;
+  S[m].dir = dir;
+  document.getElementById(`${m}_cw`).className  = 'sbtn' + (dir==='CW'  ? ' on' : '');
+  document.getElementById(`${m}_ccw`).className = 'sbtn' + (dir==='CCW' ? ' on' : '');
+}
+
+function setMode(motor, mode) {
+  const m = `m${motor}`;
+  S[m].mode = mode;
+  document.getElementById(`${m}_auto`).className   = 'sbtn' + (mode==='AUTO'   ? ' on green-active' : '');
+  document.getElementById(`${m}_manual`).className = 'sbtn' + (mode==='MANUAL' ? ' on' : '');
+}
+
+async function toggleConnect() {
+  connected ? await doDisconnect() : await doConnect();
+}
+
+async function doConnect() {
+  if (!('serial' in navigator)) {
+    setConn(true); toast('Simulation mode active','info'); addLog('info','Simulation mode — no hardware'); return;
+  }
+  try {
+    port = await navigator.serial.requestPort();
+    const baud = parseInt(document.getElementById('baudrateSelect').value, 10);
+    await port.open({ baudRate: baud });
+    writer = port.writable.getWriter();
+    setConn(true); toast(`Connected @ ${baud} baud`, 'ok'); addLog('info',`Connected @ ${baud} baud`);
+    startRead();
+  } catch(e) { toast('Connection failed', 'err'); addLog('err','Connection failed: ' + e.message); }
+}
+
+async function doDisconnect() {
+  try { reader && await reader.cancel(); } catch(e){}
+  try { writer && writer.releaseLock(); } catch(e){}
+  try { port && await port.close(); } catch(e){}
+  reader=null; writer=null; port=null;
+  rxState = RX_STATE.WAIT_SOP;   // reset RX state machine
+  setConn(false); toast('Disconnected', 'info'); addLog('info','Disconnected');
+}
+
+function setConn(v) {
+  connected = v;
+  document.getElementById('btnConnect').classList.toggle('on', v);
+  document.getElementById('connLabel').textContent = v ? 'Connected' : 'Connect';
+  document.getElementById('btnSend').disabled = !v;
+}
+
+async function startRead() {
+  if (!port) return;
+  reader = port.readable.getReader();
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      // value is Uint8Array — feed each byte through the state machine
+      for (const byte of value) rxFeed(byte);
+    }
+  } catch(e) {}
+}
+
+async function sendConfig() {
+  const payload = buildCfgPayload();
+  const packet  = buildPacket(CMD_CFG, payload);
+  await tx(packet);
+}
+
+// ── Response timeout ─────────────────────────────────────────────
+let responseTimer = null;
+const RESPONSE_TIMEOUT_MS = 2000;
+
+function startResponseTimer() {
+  clearResponseTimer();
+  responseTimer = setTimeout(() => {
+    setTx('No response from device', 'err');
+    toast('No response from device', 'err');
+    addLog('err', 'No response — device timeout (2s)');
+    responseTimer = null;
+  }, RESPONSE_TIMEOUT_MS);
+}
+
+function clearResponseTimer() {
+  if (responseTimer) { clearTimeout(responseTimer); responseTimer = null; }
+}
+
+async function tx(packet) {
+  const dump = hexDump(packet);
+  addLog('tx', dump);
+  setTx('Waiting for response…', '');
+  startResponseTimer();
+
+  // Simulation mode — synthesise ACK + CYC packets
+  if (!writer) {
+    const ackPacket = buildPacket(CMD_ACK, []);
+    setTimeout(() => { for (const b of ackPacket) rxFeed(b); }, 350);
+    const m1 = Math.floor(Math.random()*80000)+500;
+    const m2 = Math.floor(Math.random()*80000)+500;
+    const cycData = [
+      (m1>>24)&0xFF,(m1>>16)&0xFF,(m1>>8)&0xFF,m1&0xFF,
+      (m2>>24)&0xFF,(m2>>16)&0xFF,(m2>>8)&0xFF,m2&0xFF,
+    ];
+    const cycPacket = buildPacket(CMD_CYC, cycData);
+    setTimeout(() => { for (const b of cycPacket) rxFeed(b); }, 600);
+    return;
+  }
+
+  // Real hardware
+  try {
+    await writer.write(packet);
+  } catch(e) {
+    clearResponseTimer();
+    setTx('Send failed', 'err');
+    toast('TX failed', 'err');
+    addLog('err', 'TX failed: ' + e.message);
+  }
+}
+
+function setTx(msg, type) {
+  const el = document.getElementById('txStatus');
+  el.textContent = msg; el.className = `tx-status ${type}`;
+}
+
+let tT;
+function toast(msg, type='info') {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.className = `toast show ${type}`;
+  clearTimeout(tT);
+  tT = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function openDrawer() {
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawerOverlay').classList.add('open');
+}
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawerOverlay').classList.remove('open');
+}
+
+function addLog(type, msg) {
+  const ts  = new Date().toLocaleTimeString('en-GB', { hour12: false });
+  const dir = { tx:'TX', rx:'RX', err:'ERR', info:'--' }[type] || type.toUpperCase();
+  logQueue.push({ ts, dir, type, msg });
+  if (logQueue.length > MAX_LOG) logQueue.shift();
+  renderLog();
+}
+
+function renderLog() {
+  const body  = document.getElementById('logBody');
+  const count = document.getElementById('logCount');
+  if (logQueue.length === 0) {
+    body.innerHTML = '<div class="log-empty">No activity yet</div>';
+    count.textContent = '0 / ' + MAX_LOG;
+    return;
+  }
+  body.innerHTML = '';
+  logQueue.forEach(e => {
+    const row = document.createElement('div');
+    row.className = 'log-entry ' + e.type;
+    row.innerHTML =
+      '<span class="log-ts">'  + e.ts  + '</span>' +
+      '<span class="log-dir">' + e.dir + '</span>' +
+      '<span class="log-msg">' + escHtml(e.msg) + '</span>';
+    body.appendChild(row);
+  });
+  body.scrollTop = body.scrollHeight;
+  count.textContent = logQueue.length + ' / ' + MAX_LOG;
+}
+
+function clearLog() {
+  logQueue.length = 0;
+  renderLog();
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>

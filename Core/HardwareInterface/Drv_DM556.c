@@ -87,6 +87,28 @@ void DisableStepper(Stepper *pStepper)
 .Returns :
 .Note : use this function for all major initilization
 ******************************************************************************/
+void Set_FrequencyOfMotor(Stepper *pStepper , uint32_t u32FrequncyHz)
+{
+	/*RPM=a/360∗f∗60*/
+	uint32_t u32Arr = 0.0f;
+	if(u32FrequncyHz)
+	{
+		u32Arr = (uint32_t)(DEFAULT_STEPPER_TIMER_FREQ / u32FrequncyHz);
+		u32Arr -= 1U;
+	}
+
+	DisableStepper(pStepper);
+	HAL_TIM_Base_Stop(pStepper->pTim);
+	__HAL_TIM_SET_AUTORELOAD(pStepper->pTim , (uint32_t)u32Arr);
+	__HAL_TIM_SET_COUNTER(pStepper->pTim , 0);
+	EnableStepper(pStepper);
+	HAL_TIM_Base_Start_IT(pStepper->pTim);
+}
+/******************************.FUNCTION_HEADER.******************************
+.Purpose : This function serve as one time call function of application layer
+.Returns :
+.Note : use this function for all major initilization
+******************************************************************************/
 void Set_RpmOfMotor(Stepper *pStepper , uint32_t u32Rpm)
 {
 	/*RPM=a/360∗f∗60*/
@@ -134,6 +156,19 @@ void Rotate_StepperSteps(Stepper *pStepper , uint32_t u32Steps ,  uint32_t u32Rp
 .Returns :
 .Note : use this function for all major initilization
 ******************************************************************************/
+void Rotate_StepperSteps_Freq(Stepper *pStepper , uint32_t u32Steps ,  uint32_t u32Freq)
+{
+	Set_FrequencyOfMotor(pStepper , u32Freq);
+	pStepper->u32CurrStepCount = 0;
+	pStepper->u32TotalStepCount = u32Steps;
+	pStepper->bContinousRotationEnable = 0U;
+	Start_StepperMotor(pStepper);
+}
+/******************************.FUNCTION_HEADER.******************************
+.Purpose : This function serve as one time call function of application layer
+.Returns :
+.Note : use this function for all major initilization
+******************************************************************************/
 void Stop_StepperMotor(Stepper *pStepper)
 {
 	pStepper->u32CurrStepCount = 0;
@@ -152,6 +187,19 @@ void StartContinous_StepperMotor(Stepper *pStepper , uint32_t u32Rpm)
 	pStepper->u32CurrStepCount = 0;
 	pStepper->u32TotalStepCount = 0;
 	Set_RpmOfMotor(pStepper , u32Rpm);
+	pStepper->bContinousRotationEnable = 1U;
+	Start_StepperMotor(pStepper);
+}
+/******************************.FUNCTION_HEADER.******************************
+.Purpose : This function serve as one time call function of application layer
+.Returns :
+.Note : use this function for all major initilization
+******************************************************************************/
+void StartContinous_StepperMotor_Freq(Stepper *pStepper , uint32_t u32Freq)
+{
+	pStepper->u32CurrStepCount = 0;
+	pStepper->u32TotalStepCount = 0;
+	Set_FrequencyOfMotor(pStepper , u32Freq);
 	pStepper->bContinousRotationEnable = 1U;
 	Start_StepperMotor(pStepper);
 }

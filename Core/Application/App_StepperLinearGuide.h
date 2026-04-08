@@ -14,4 +14,5 @@ void Callback_StepperTimer_MotX(void);
 void Callback_StepperTimer_MotY(void);
 void CallBack_HomeSensDetectMotorX(void);
 void CallBack_HomeSensDetectMotorY(void);
+void App_Disable_AllMotors(void);
 #endif /* APPLICATION_APP_STEPPERLINEARGUIDE_H_ */

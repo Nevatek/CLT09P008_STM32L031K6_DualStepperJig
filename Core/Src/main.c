@@ -22,7 +22,9 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "Drv_DM556.h"
+#include "Drv_Uart.h"
 #include "App_StepperLinearGuide.h"
+#include "Appl_PacketHandler.h"
 #include "ApplicationLayer.h"
 /* USER CODE END Includes */
 
@@ -124,6 +126,32 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	if(TIM21 == htim->Instance)
 	{
 		Callback_StepperTimer_MotY();
+	}
+}
+/*********************.HAL_I2C_MasterTxCpltCallback().************************
+ .Purpose        : Callback for transmission complete for IT & DMA
+ .Returns        :  RETURN_ERROR
+					RETURN_SUCCESS
+ .Note           :
+ ****************************************************************************/
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+	if (huart->Instance == USART2)
+	{
+		uart_TransmitCallback((UART_HandleTypeDef*)huart);
+	}
+}
+/*********************.HAL_I2C_MasterTxCpltCallback().************************
+ .Purpose        : Callback for transmission complete for IT & DMA
+ .Returns        :  RETURN_ERROR
+					RETURN_SUCCESS
+ .Note           :
+ ****************************************************************************/
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
+{
+	if (huart->Instance == USART2)
+	{
+		uart_ReceiveCallback((UART_HandleTypeDef*)huart , Size);
 	}
 }
 /* USER CODE END 0 */
@@ -333,7 +361,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = 9600;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
