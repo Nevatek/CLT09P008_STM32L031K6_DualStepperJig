@@ -76,7 +76,6 @@ header {
   display: flex; align-items: baseline; gap: 8px;
 }
 .hdr-title-main {
-  font-family: var(--font);
   font-size: 16px; font-weight: 800;
   color: var(--t1); letter-spacing: 0.3px;
 }
@@ -414,14 +413,13 @@ header {
 .jb { color: var(--orange); }
 
 /* ── Serial Log ── */
-.log-section { margin-top: 0; }
+.log-section { }
 .log-card {
   background: var(--s1);
   border: 1px solid var(--border);
   border-radius: var(--r);
   overflow: hidden;
   animation: rise .35s ease both;
-  animation-delay: .32s;
 }
 .log-card:hover { border-color: var(--border2); }
 .log-head {
@@ -457,7 +455,6 @@ header {
   display: grid;
   grid-template-columns: 68px 34px 1fr;
   align-items: baseline;
-  gap: 0;
   padding: 5px 20px;
   font-size: 11.5px; line-height: 1.5;
   border-bottom: 1px solid transparent;
@@ -511,7 +508,7 @@ header {
   <div class="hdr-r">
     <select class="baud-sel" id="baudrateSelect">
       <option value="9600">9600 baud</option>
-      <option value="115200">115200 baud</option>
+      <option value="115200" selected>115200 baud</option>
     </select>
     <button class="btn-conn" id="btnConnect" onclick="toggleConnect()">
       <span class="cdot"></span>
@@ -713,7 +710,7 @@ header {
             </select>
           </div>
           <div class="field">
-            <span class="flbl">Frequency (Hz)</span>
+            <span class="flbl">RPM</span>
             <input class="finp" type="number" id="m1_freq" value="1000" min="1" max="100000" oninput="syncState()">
           </div>
           <div class="tog-row" id="m1_togrow">
@@ -770,7 +767,7 @@ header {
             </select>
           </div>
           <div class="field">
-            <span class="flbl">Frequency (Hz)</span>
+            <span class="flbl">RPM</span>
             <input class="finp" type="number" id="m2_freq" value="1000" min="1" max="100000" oninput="syncState()">
           </div>
           <div class="tog-row" id="m2_togrow">
@@ -845,7 +842,7 @@ header {
       <div class="log-head">
         <div class="log-head-left">
           <span class="log-title">Activity</span>
-          <span class="log-count" id="logCount">0 / 5</span>
+          <span class="log-count" id="logCount">0 / —</span>
         </div>
         <button class="log-clear" onclick="clearLog()">Clear</button>
       </div>
@@ -938,7 +935,7 @@ function hexDump(bytes) {
 // ════════════════════════════════════════════════════════════════
 const RX_STATE = { WAIT_SOP:0, WAIT_CMD:1, WAIT_LEN:2, WAIT_DATA:3, WAIT_CRC1:4, WAIT_CRC2:5 };
 let rxState = RX_STATE.WAIT_SOP;
-let rxCmd=0, rxLen=0, rxData=[], rxCrc1=0;
+let rxCmd=0, rxLen=0, rxData=new Uint8Array(256), rxDataIdx=0, rxCrc1=0;
 
 function rxFeed(byte) {
   switch(rxState) {
@@ -949,12 +946,12 @@ function rxFeed(byte) {
       rxCmd = byte; rxState = RX_STATE.WAIT_LEN;
       break;
     case RX_STATE.WAIT_LEN:
-      rxLen = byte; rxData = [];
+      rxLen = byte; rxDataIdx = 0;
       rxState = rxLen === 0 ? RX_STATE.WAIT_CRC1 : RX_STATE.WAIT_DATA;
       break;
     case RX_STATE.WAIT_DATA:
-      rxData.push(byte);
-      if (rxData.length === rxLen) rxState = RX_STATE.WAIT_CRC1;
+      rxData[rxDataIdx++] = byte;
+      if (rxDataIdx === rxLen) rxState = RX_STATE.WAIT_CRC1;
       break;
     case RX_STATE.WAIT_CRC1:
       rxCrc1 = byte; rxState = RX_STATE.WAIT_CRC2;
@@ -962,12 +959,13 @@ function rxFeed(byte) {
     case RX_STATE.WAIT_CRC2: {
       const rxCrc2 = byte;
       const received = (rxCrc1 << 8) | rxCrc2;
-      const expected = crc16([rxCmd, rxLen, ...rxData]);
+      const slice = rxData.subarray(0, rxLen);
+      const expected = crc16([rxCmd, rxLen, ...slice]);
       rxState = RX_STATE.WAIT_SOP;     // reset for next packet
       if (received !== expected) {
         addLog('err', `CRC fail — got ${received.toString(16).toUpperCase()} expected ${expected.toString(16).toUpperCase()}`);
       } else {
-        handlePacket(rxCmd, rxData);
+        handlePacket(rxCmd, slice);
       }
       break;
     }
@@ -1024,6 +1022,7 @@ const S = {
 let port=null, writer=null, reader=null, connected=false;
 
 window.onload = () => {
+  document.getElementById('logCount').textContent = '0 / ' + MAX_LOG;
   if (!('serial' in navigator)) document.getElementById('noSerialBanner').style.display='flex';
   ['m1','m2'].forEach(m => {
     document.getElementById(`${m}_home`).addEventListener('change', function() {
@@ -1091,7 +1090,7 @@ async function doDisconnect() {
   try { writer && writer.releaseLock(); } catch(e){}
   try { port && await port.close(); } catch(e){}
   reader=null; writer=null; port=null;
-  rxState = RX_STATE.WAIT_SOP;   // reset RX state machine
+  rxState = RX_STATE.WAIT_SOP; rxDataIdx = 0;  // reset RX state machine
   setConn(false); toast('Disconnected', 'info'); addLog('info','Disconnected');
 }
 
@@ -1112,8 +1111,15 @@ async function startRead() {
       // value is Uint8Array — feed each byte through the state machine
       for (const byte of value) rxFeed(byte);
     }
-  } catch(e) {}
-}
+  } catch(e) {
+    // Port closed or lost — clean up state
+    if (connected) {
+      addLog('err', 'Serial read error: ' + (e.message || e));
+      reader = null;
+      setConn(false);
+      toast('Connection lost', 'err');
+    }
+  }}
 
 async function sendConfig() {
   const payload = buildCfgPayload();
@@ -1152,8 +1158,8 @@ async function tx(packet) {
     const m1 = Math.floor(Math.random()*80000)+500;
     const m2 = Math.floor(Math.random()*80000)+500;
     const cycData = [
-      (m1>>24)&0xFF,(m1>>16)&0xFF,(m1>>8)&0xFF,m1&0xFF,
-      (m2>>24)&0xFF,(m2>>16)&0xFF,(m2>>8)&0xFF,m2&0xFF,
+      m1&0xFF,(m1>>8)&0xFF,(m1>>16)&0xFF,(m1>>24)&0xFF,
+      m2&0xFF,(m2>>8)&0xFF,(m2>>16)&0xFF,(m2>>24)&0xFF,
     ];
     const cycPacket = buildPacket(CMD_CYC, cycData);
     setTimeout(() => { for (const b of cycPacket) rxFeed(b); }, 600);
