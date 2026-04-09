@@ -31,7 +31,7 @@ typedef struct
 	uint32_t u1HomePosEnabled : 1U;
 	uint32_t u1ApplEnabled : 1U;/*Motor on/off*/
 	uint32_t : 30U;
-	uint32_t u32Freq;
+	uint32_t u32Rpm;
 	SYS_OPERATING_MODE m_OperatingMode;
 	MOTOR_MICRO_STEP_SEL m_MicroStep;
 	ROTATION_DIRECTION m_Direction;

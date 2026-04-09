@@ -97,7 +97,7 @@ UART_HandleTypeDef* GetInstance_UART2(void)
 .Returns :
 .Note : use this function for all major initilization
 ******************************************************************************/
-void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin)
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	switch(GPIO_Pin)
 	{

@@ -26,7 +26,7 @@ MTR_APP_PROCESS g_MtrAppProcess_Y;
 ******************************************************************************/
 inline void Callback_StepperTimer_MotX(void)
 {
-	g_StepperMotorX.Callback_TimerComplete((Stepper *)&(g_StepperMotorX));
+	Execute_PulseCallback_MotorX((Stepper *)&(g_StepperMotorX));
 }
 /******************************.FUNCTION_HEADER.******************************
 .Purpose : This function serve as one time call function of application layer
@@ -35,7 +35,7 @@ inline void Callback_StepperTimer_MotX(void)
 ******************************************************************************/
 inline void Callback_StepperTimer_MotY(void)
 {
-	g_StepperMotorY.Callback_TimerComplete((Stepper *)&(g_StepperMotorY));
+	Execute_PulseCallback_MotorY((Stepper *)&(g_StepperMotorY));
 }
 /******************************.FUNCTION_HEADER.******************************
 .Purpose : This function serve as one time call function of application layer
@@ -68,6 +68,7 @@ inline void CallBack_HomeSensDetectMotorY(void)
 ******************************************************************************/
 void App_StepperLinearGuide_Init(void)
 {
+	APPL_CONFIG *pApplCfg = GetInstance_ApplConfig();
 	/*Config Stepper 1*/
 	g_StepperMotorX.p_DirPort = MOT1_DIR__GPIO_Port;
 	g_StepperMotorX.p_EnablePort = MOT1_DISABLE__GPIO_Port;
@@ -75,10 +76,10 @@ void App_StepperLinearGuide_Init(void)
 	g_StepperMotorX.u8DirPin = MOT1_DIR__Pin;
 	g_StepperMotorX.u8EnablePin = MOT1_DISABLE__Pin;
 	g_StepperMotorX.u8PulsePin = MOT1_PUL__Pin;
-	g_StepperMotorX.bHomeSensEnable = TRUE;/*Enable Home sensor by DEFAULT*/
+	g_StepperMotorX.bHomeSensEnable = pApplCfg->m_AppMotorX.u1HomePosEnabled;
 	Config_StepperTimer(&(g_StepperMotorX) ,
-			GetInstance_Timer2() , &Execute_PulseCallback ,
-			MOTOR_MS_STEP_1_64 , TMC_STEALTH_CHOP);
+			GetInstance_Timer2() , &Execute_PulseCallback_MotorX ,
+			pApplCfg->m_AppMotorX.m_MicroStep , TMC_STEALTH_CHOP);
 
 	/*Config Stepper 2*/
 	g_StepperMotorY.p_DirPort = MOT2_DIR__GPIO_Port;
@@ -87,16 +88,13 @@ void App_StepperLinearGuide_Init(void)
 	g_StepperMotorY.u8DirPin = MOT2_DIR__Pin;
 	g_StepperMotorY.u8EnablePin = MOT2_DISABLE__Pin;
 	g_StepperMotorY.u8PulsePin = MOT2_PUL__Pin;
-	g_StepperMotorY.bHomeSensEnable = TRUE;/*Enable Home sensor by DEFAULT*/
+	g_StepperMotorY.bHomeSensEnable = pApplCfg->m_AppMotorY.u1HomePosEnabled;
 	Config_StepperTimer(&(g_StepperMotorY) ,
-			GetInstance_Timer21() , &Execute_PulseCallback ,
-			MOTOR_MS_STEP_1_64 , TMC_STEALTH_CHOP);
+			GetInstance_Timer21() , &Execute_PulseCallback_MotorY ,
+			pApplCfg->m_AppMotorY.m_MicroStep , TMC_STEALTH_CHOP);
 
 	DisableStepper(&(g_StepperMotorX));
 	DisableStepper(&(g_StepperMotorY));
-
-//	Rotate_StepperSteps(&(g_StepperMotorY) , 15210 , 30);
-//	StartContinous_StepperMotor(&(g_Stepp0erMotorY) , 230);
 }
 /******************************.FUNCTION_HEADER.******************************
 .Purpose : This function serve as one time call function of application layer
@@ -178,15 +176,15 @@ void App_StepperLinearGuide_Exe(void)
 					SetDirection_Stepper(&(g_StepperMotorX) , pApplCfg->m_AppMotorX.m_Direction);
 					if(TRUE == pApplCfg->m_AppMotorX.u1HomePosEnabled)
 					{
-						Rotate_StepperSteps_Freq(&(g_StepperMotorX) ,
+						Rotate_StepperSteps(&(g_StepperMotorX) ,
 								pApplCfg->m_AppMotorX.u32NumOfSteps + DEFAULT_HOME_POS_OFFSET_STEPS ,
-								pApplCfg->m_AppMotorX.u32Freq);
+								pApplCfg->m_AppMotorX.u32Rpm);
 					}
 					else/*If home positon is not enabled*/
 					{
-						Rotate_StepperSteps_Freq(&(g_StepperMotorX) ,
+						Rotate_StepperSteps(&(g_StepperMotorX) ,
 								pApplCfg->m_AppMotorX.u32NumOfSteps ,
-								pApplCfg->m_AppMotorX.u32Freq);
+								pApplCfg->m_AppMotorX.u32Rpm);
 					}
 					g_MtrAppProcess_X = MTR_APP_MOVE_TO_HOME_WAIT;
 				}break;
@@ -209,9 +207,9 @@ void App_StepperLinearGuide_Exe(void)
 				case (MTR_APP_MOVE_TO_STEP):
 				{
 					SetDirection_Stepper(&(g_StepperMotorX) , !pApplCfg->m_AppMotorX.m_Direction);
-					Rotate_StepperSteps_Freq(&(g_StepperMotorX) ,
+					Rotate_StepperSteps(&(g_StepperMotorX) ,
 							pApplCfg->m_AppMotorX.u32NumOfSteps ,
-							pApplCfg->m_AppMotorX.u32Freq);
+							pApplCfg->m_AppMotorX.u32Rpm);
 					g_MtrAppProcess_X = MTR_APP_MOVE_TO_STEP_WAIT;
 				}break;
 				case (MTR_APP_MOVE_TO_STEP_WAIT):
@@ -304,15 +302,15 @@ void App_StepperLinearGuide_Exe(void)
 					SetDirection_Stepper(&(g_StepperMotorY) , pApplCfg->m_AppMotorY.m_Direction);
 					if(TRUE == pApplCfg->m_AppMotorY.u1HomePosEnabled)
 					{
-						Rotate_StepperSteps_Freq(&(g_StepperMotorY) ,
+						Rotate_StepperSteps(&(g_StepperMotorY) ,
 								pApplCfg->m_AppMotorY.u32NumOfSteps + DEFAULT_HOME_POS_OFFSET_STEPS ,
-								pApplCfg->m_AppMotorY.u32Freq);
+								pApplCfg->m_AppMotorY.u32Rpm);
 					}
 					else/*If home positon is not enabled*/
 					{
-						Rotate_StepperSteps_Freq(&(g_StepperMotorY) ,
+						Rotate_StepperSteps(&(g_StepperMotorY) ,
 								pApplCfg->m_AppMotorY.u32NumOfSteps ,
-								pApplCfg->m_AppMotorY.u32Freq);
+								pApplCfg->m_AppMotorY.u32Rpm);
 					}
 					g_MtrAppProcess_Y = MTR_APP_MOVE_TO_HOME_WAIT;
 				}break;
@@ -335,9 +333,9 @@ void App_StepperLinearGuide_Exe(void)
 				case (MTR_APP_MOVE_TO_STEP):
 				{
 					SetDirection_Stepper(&(g_StepperMotorY) , !pApplCfg->m_AppMotorY.m_Direction);
-					Rotate_StepperSteps_Freq(&(g_StepperMotorY) ,
+					Rotate_StepperSteps(&(g_StepperMotorY) ,
 							pApplCfg->m_AppMotorY.u32NumOfSteps ,
-							pApplCfg->m_AppMotorY.u32Freq);
+							pApplCfg->m_AppMotorY.u32Rpm);
 					g_MtrAppProcess_Y = MTR_APP_MOVE_TO_STEP_WAIT;
 				}break;
 				case (MTR_APP_MOVE_TO_STEP_WAIT):

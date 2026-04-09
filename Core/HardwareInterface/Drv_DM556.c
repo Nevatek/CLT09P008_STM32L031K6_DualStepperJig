@@ -15,18 +15,43 @@ static double g_fMicroStepDividentVal = 0.0f;
 .Returns :
 .Note : use this function for all major initilization
 ******************************************************************************/
-inline void Execute_PulseCallback(Stepper *pStepper)
+inline void Execute_PulseCallback_MotorX(Stepper *pStepper)
 {
-	if(FALSE == pStepper->bContinousRotationEnable &&
-			pStepper->u32TotalStepCount <= pStepper->u32CurrStepCount)
-	{
-		Stop_StepperMotor(pStepper);
-	}
-	else
-	{
-		HAL_GPIO_TogglePin (pStepper->p_PulsePort, pStepper->u8PulsePin);
-		pStepper->u32CurrStepCount++;
-	}
+    HAL_GPIO_TogglePin(pStepper->p_PulsePort, pStepper->u8PulsePin);
+
+    /* Only increment step count on rising edge (when pin goes HIGH) */
+    if(HAL_GPIO_ReadPin(pStepper->p_PulsePort, pStepper->u8PulsePin) == GPIO_PIN_SET)
+    {
+        pStepper->u32CurrStepCount++;
+
+        /* Check if target steps reached */
+        if(FALSE == pStepper->bContinousRotationEnable &&
+           pStepper->u32CurrStepCount >= pStepper->u32TotalStepCount)
+        {
+            Stop_StepperMotor(pStepper);
+        }
+    }
+}
+/******************************.FUNCTION_HEADER.******************************
+.Purpose : This function serve as one time call function of application layer
+.Returns :
+.Note : use this function for all major initilization
+******************************************************************************/
+inline void Execute_PulseCallback_MotorY(Stepper *pStepper)
+{
+    HAL_GPIO_TogglePin(pStepper->p_PulsePort, pStepper->u8PulsePin);
+
+    /* Only increment step count on rising edge */
+    if(HAL_GPIO_ReadPin(pStepper->p_PulsePort, pStepper->u8PulsePin) == GPIO_PIN_SET)
+    {
+        pStepper->u32CurrStepCount++;
+
+        if(FALSE == pStepper->bContinousRotationEnable &&
+           pStepper->u32CurrStepCount >= pStepper->u32TotalStepCount)
+        {
+            Stop_StepperMotor(pStepper);
+        }
+    }
 }
 /******************************.FUNCTION_HEADER.******************************
 .Purpose : This function serve as one time call function of application layer
@@ -55,6 +80,7 @@ void Config_StepperTimer(Stepper *pStepper , TIM_HandleTypeDef *pTimer ,
 	__HAL_TIM_SET_COUNTER(pStepper->pTim , 0U);
 	Stop_StepperMotor(pStepper);
 }
+
 /******************************.FUNCTION_HEADER.******************************
 .Purpose : This function serve as one time call function of application layer
 .Returns :
@@ -98,45 +124,40 @@ void Set_FrequencyOfMotor(Stepper *pStepper , uint32_t u32FrequncyHz)
 	}
 
 	DisableStepper(pStepper);
-	HAL_TIM_Base_Stop(pStepper->pTim);
+	HAL_TIM_Base_Stop_IT(pStepper->pTim);
 	__HAL_TIM_SET_AUTORELOAD(pStepper->pTim , (uint32_t)u32Arr);
 	__HAL_TIM_SET_COUNTER(pStepper->pTim , 0);
-//	EnableStepper(pStepper);
-//	HAL_TIM_Base_Start_IT(pStepper->pTim);
 }
 /******************************.FUNCTION_HEADER.******************************
 .Purpose : This function serve as one time call function of application layer
 .Returns :
 .Note : use this function for all major initilization
 ******************************************************************************/
-void Set_RpmOfMotor(Stepper *pStepper , uint32_t u32Rpm)
+void Set_RpmOfMotor(Stepper *pStepper, uint32_t u32Rpm)
 {
-	/*RPM=a/360∗f∗60*/
-	uint32_t u32Arr = 0.0f;
-	double u32Freq = 0.0f;
-	double fStepperAngle = 0.0f;
-	fStepperAngle = ((double)STEPPER_DEFAULT_ANGLE / (double)g_fMicroStepDividentVal);
-	fStepperAngle /= 360.0f;/*Step per revelotion*/
-	fStepperAngle *= 60.0f;/*Conversion to minute*/
+    uint32_t u32Arr = 0;
+    double u32Freq = 0.0;
+    double fStepsPerRev = 0.0;
 
-	if(fStepperAngle)
-	{
-		u32Freq = ((double)u32Rpm / fStepperAngle);
-	}
+    /* Calculate steps per revolution */
+    fStepsPerRev = 360.0 / ((double)STEPPER_DEFAULT_ANGLE / (double)g_fMicroStepDividentVal);
 
+    /* Calculate required step frequency (steps/second) */
+    u32Freq = ((double)u32Rpm / 60.0) * fStepsPerRev;
 
-	if(u32Freq)
-	{
-		u32Arr = (uint32_t)(DEFAULT_STEPPER_TIMER_FREQ / u32Freq);
-		u32Arr -= 1U;
-	}
+    /* GPIO toggle needs 2× timer frequency (rising + falling edge per step) */
+    u32Freq *= 2.0;
 
-	DisableStepper(pStepper);
-	HAL_TIM_Base_Stop(pStepper->pTim);
-	__HAL_TIM_SET_AUTORELOAD(pStepper->pTim , (uint32_t)u32Arr);
-	__HAL_TIM_SET_COUNTER(pStepper->pTim , 0);
-//	EnableStepper(pStepper);
-//	HAL_TIM_Base_Start_IT(pStepper->pTim);
+    if(u32Freq > 0.0)
+    {
+        u32Arr = (uint32_t)(DEFAULT_STEPPER_TIMER_FREQ / u32Freq);
+        u32Arr -= 1U;
+    }
+
+    DisableStepper(pStepper);
+    HAL_TIM_Base_Stop_IT(pStepper->pTim);
+    __HAL_TIM_SET_AUTORELOAD(pStepper->pTim, u32Arr);
+    __HAL_TIM_SET_COUNTER(pStepper->pTim, 0);
 }
 /******************************.FUNCTION_HEADER.******************************
 .Purpose : This function serve as one time call function of application layer
@@ -174,7 +195,7 @@ void Stop_StepperMotor(Stepper *pStepper)
 	pStepper->u32CurrStepCount = 0;
 	pStepper->u32TotalStepCount = 0;
 	pStepper->bContinousRotationEnable = 0U;
-	HAL_TIM_Base_Stop(pStepper->pTim);
+	HAL_TIM_Base_Stop_IT(pStepper->pTim);
 	pStepper->m_State = STEPPER_MOTOR_STOP;
 }
 /******************************.FUNCTION_HEADER.******************************

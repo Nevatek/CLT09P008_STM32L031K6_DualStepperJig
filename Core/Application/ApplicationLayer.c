@@ -57,7 +57,7 @@ void ApplicationLayer_Init(void)
 		g_Appl_NvmData.m_AppMotorX.m_MicroStep = MOTOR_MS_STEP_1_64;
 		g_Appl_NvmData.m_AppMotorX.m_MtrState = STEPPER_MOTOR_STOP;
 		g_Appl_NvmData.m_AppMotorX.m_OperatingMode = SYS_OPERATING_MODE_AUTO;
-		g_Appl_NvmData.m_AppMotorX.u32Freq = 10U;
+		g_Appl_NvmData.m_AppMotorX.u32Rpm = 10U;
 		g_Appl_NvmData.m_AppMotorX.u1ApplEnabled = FALSE;
 		g_Appl_NvmData.m_AppMotorX.u1HomePosEnabled = TRUE;
 		g_Appl_NvmData.m_AppMotorX.u32NumOfSteps = 360U;
@@ -66,7 +66,7 @@ void ApplicationLayer_Init(void)
 		g_Appl_NvmData.m_AppMotorY.m_MicroStep = MOTOR_MS_STEP_1_64;
 		g_Appl_NvmData.m_AppMotorY.m_MtrState = STEPPER_MOTOR_STOP;
 		g_Appl_NvmData.m_AppMotorY.m_OperatingMode = SYS_OPERATING_MODE_AUTO;
-		g_Appl_NvmData.m_AppMotorY.u32Freq = 10U;
+		g_Appl_NvmData.m_AppMotorY.u32Rpm = 10U;
 		g_Appl_NvmData.m_AppMotorY.u1ApplEnabled = FALSE;
 		g_Appl_NvmData.m_AppMotorY.u1HomePosEnabled = TRUE;
 		g_Appl_NvmData.m_AppMotorY.u32NumOfSteps = 360U;
@@ -137,15 +137,15 @@ void ApplicationLayer_Exe(void)
 		if(enSw_FallingEdge == GetState_Switch(&(g_SW_MotorX_DirCW)))
 		{
 			SetDirection_Stepper(&(g_StepperMotorX) , Rotate_Clockwise);
-			Rotate_StepperSteps_Freq(&(g_StepperMotorX) ,
-					g_ApplConfig.m_AppMotorX.u32NumOfSteps , g_ApplConfig.m_AppMotorX.u32Freq);
+			Rotate_StepperSteps(&(g_StepperMotorX) ,
+					g_ApplConfig.m_AppMotorX.u32NumOfSteps , g_ApplConfig.m_AppMotorX.u32Rpm);
 		}
 
 		if(enSw_FallingEdge == GetState_Switch(&(g_SW_MotorX_DirCCW)))
 		{
 			SetDirection_Stepper(&(g_StepperMotorX) , Rotate_AntiClockwise);
-			Rotate_StepperSteps_Freq(&(g_StepperMotorX) ,
-					g_ApplConfig.m_AppMotorX.u32NumOfSteps , g_ApplConfig.m_AppMotorX.u32Freq);
+			Rotate_StepperSteps(&(g_StepperMotorX) ,
+					g_ApplConfig.m_AppMotorX.u32NumOfSteps , g_ApplConfig.m_AppMotorX.u32Rpm);
 		}
 	}
 
@@ -176,15 +176,15 @@ void ApplicationLayer_Exe(void)
 		if(enSw_FallingEdge == GetState_Switch(&(g_SW_MotorY_DirCW)))
 		{
 			SetDirection_Stepper(&(g_StepperMotorY) , Rotate_Clockwise);
-			Rotate_StepperSteps_Freq(&(g_StepperMotorY) ,
-					g_ApplConfig.m_AppMotorY.u32NumOfSteps , g_ApplConfig.m_AppMotorY.u32Freq);
+			Rotate_StepperSteps(&(g_StepperMotorY) ,
+					g_ApplConfig.m_AppMotorY.u32NumOfSteps , g_ApplConfig.m_AppMotorY.u32Rpm);
 		}
 
 		if(enSw_FallingEdge == GetState_Switch(&(g_SW_MotorY_DirCCW)))
 		{
 			SetDirection_Stepper(&(g_StepperMotorY) , Rotate_AntiClockwise);
-			Rotate_StepperSteps_Freq(&(g_StepperMotorY) ,
-					g_ApplConfig.m_AppMotorY.u32NumOfSteps , g_ApplConfig.m_AppMotorY.u32Freq);
+			Rotate_StepperSteps(&(g_StepperMotorY) ,
+					g_ApplConfig.m_AppMotorY.u32NumOfSteps , g_ApplConfig.m_AppMotorY.u32Rpm);
 		}
 	}
 	Appl_PacketHandler_UpdateCycles(g_ApplRunTimeData.u32MotorX_CycleCount ,
@@ -270,7 +270,7 @@ void Callback_Appl_ConfigUpdated(SystemCofig_t *pConfig)
 		}break;
 	}
 	g_Appl_NvmData.m_AppMotorX.m_OperatingMode = (SYS_OPERATING_MODE)pConfig->motor1.mode;
-	g_Appl_NvmData.m_AppMotorX.u32Freq = pConfig->motor1.freq;
+	g_Appl_NvmData.m_AppMotorX.u32Rpm = pConfig->motor1.freq;
 	g_Appl_NvmData.m_AppMotorX.u1ApplEnabled = FALSE;
 	g_Appl_NvmData.m_AppMotorX.u1HomePosEnabled = pConfig->motor1.home;
 	g_Appl_NvmData.m_AppMotorX.u32NumOfSteps = pConfig->motor1.steps;
@@ -319,7 +319,7 @@ void Callback_Appl_ConfigUpdated(SystemCofig_t *pConfig)
 		}break;
 	}
 	g_Appl_NvmData.m_AppMotorY.m_OperatingMode = (SYS_OPERATING_MODE)pConfig->motor2.mode;
-	g_Appl_NvmData.m_AppMotorY.u32Freq = pConfig->motor2.freq;
+	g_Appl_NvmData.m_AppMotorY.u32Rpm = pConfig->motor2.freq;
 	g_Appl_NvmData.m_AppMotorY.u1ApplEnabled = FALSE;
 	g_Appl_NvmData.m_AppMotorY.u1HomePosEnabled = pConfig->motor2.home;
 	g_Appl_NvmData.m_AppMotorY.u32NumOfSteps = pConfig->motor2.steps;
@@ -333,5 +333,7 @@ void Callback_Appl_ConfigUpdated(SystemCofig_t *pConfig)
 	g_ApplRunTimeData.u32MotorY_CycleCount = 0U;
 	Drv_InternalEEPROM_Write((uint16_t)EEPROM_START_ADDR + 64U,
 			(const uint8_t*)&(g_ApplRunTimeData) , sizeof(g_ApplRunTimeData));
+
+	App_StepperLinearGuide_Init();
 }
 /*END OF FILE*/

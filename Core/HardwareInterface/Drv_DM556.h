@@ -68,7 +68,8 @@ typedef struct
 	void (*Callback_TimerComplete)(void *m_Inst);
 }Stepper;
 
-void Execute_PulseCallback(Stepper *pStepper);
+void Execute_PulseCallback_MotorX(Stepper *pStepper);
+void Execute_PulseCallback_MotorY(Stepper *pStepper);
 void Config_StepperTimer(Stepper *pStepper , TIM_HandleTypeDef *pTimer , void *pCallback , MOTOR_MICRO_STEP_SEL m_uStepSel , TMC_MOTOR_MODE m_MotorMode);
 void Set_RpmOfMotor(Stepper *pStepper , uint32_t u32Rpm);
 void Set_FrequencyOfMotor(Stepper *pStepper , uint32_t u32FrequncyHz);
