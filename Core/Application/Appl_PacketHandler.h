@@ -59,5 +59,5 @@ typedef struct
 
 void Appl_PacketHandler_Init(void);
 void Appl_PacketHandler_Exe(void);
-
+void Appl_PacketHandler_UpdateCycles(uint32_t m1, uint32_t m2);
 #endif /* APPL_PACKET_HANDLER_H_ */

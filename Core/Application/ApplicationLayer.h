@@ -11,6 +11,8 @@
 #define FLASH_INIT_FLAG 	(0xAA)
 #define FLASH_DEFAULT_FLAG 	(0xFF)
 
+#define NVM_RUN_TIME_DATA_SAVE_INTERVEL_MS (5000U)
+
 typedef enum
 {
 	SYS_OPERATING_MODE_AUTO = 0U,
@@ -26,10 +28,10 @@ typedef enum
 typedef struct
 {
 	uint32_t u32NumOfSteps;
-	uint32_t u16Rpm : 16U;
 	uint32_t u1HomePosEnabled : 1U;
 	uint32_t u1ApplEnabled : 1U;/*Motor on/off*/
-	uint32_t : 14U;
+	uint32_t : 30U;
+	uint32_t u32Freq;
 	SYS_OPERATING_MODE m_OperatingMode;
 	MOTOR_MICRO_STEP_SEL m_MicroStep;
 	ROTATION_DIRECTION m_Direction;
@@ -44,8 +46,15 @@ typedef struct
 	MOTOR_APP_CONFIG m_AppMotorY;
 }APPL_CONFIG;
 
+typedef struct
+{
+	uint32_t u32MotorX_CycleCount;
+	uint32_t u32MotorY_CycleCount;
+}RUN_TIME_DATA;
+
 void ApplicationLayer_Init(void);
 void ApplicationLayer_Exe(void);
 APPL_CONFIG* GetInstance_ApplConfig(void);
+RUN_TIME_DATA* GetInstance_ApplRunTimData(void);
 void Callback_Appl_ConfigUpdated(SystemCofig_t *pConfig);
 #endif /* APPLICATION_APPLICATIONLAYER_H_ */

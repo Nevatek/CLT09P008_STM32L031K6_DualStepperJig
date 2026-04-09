@@ -101,8 +101,8 @@ void Set_FrequencyOfMotor(Stepper *pStepper , uint32_t u32FrequncyHz)
 	HAL_TIM_Base_Stop(pStepper->pTim);
 	__HAL_TIM_SET_AUTORELOAD(pStepper->pTim , (uint32_t)u32Arr);
 	__HAL_TIM_SET_COUNTER(pStepper->pTim , 0);
-	EnableStepper(pStepper);
-	HAL_TIM_Base_Start_IT(pStepper->pTim);
+//	EnableStepper(pStepper);
+//	HAL_TIM_Base_Start_IT(pStepper->pTim);
 }
 /******************************.FUNCTION_HEADER.******************************
 .Purpose : This function serve as one time call function of application layer
@@ -135,8 +135,8 @@ void Set_RpmOfMotor(Stepper *pStepper , uint32_t u32Rpm)
 	HAL_TIM_Base_Stop(pStepper->pTim);
 	__HAL_TIM_SET_AUTORELOAD(pStepper->pTim , (uint32_t)u32Arr);
 	__HAL_TIM_SET_COUNTER(pStepper->pTim , 0);
-	EnableStepper(pStepper);
-	HAL_TIM_Base_Start_IT(pStepper->pTim);
+//	EnableStepper(pStepper);
+//	HAL_TIM_Base_Start_IT(pStepper->pTim);
 }
 /******************************.FUNCTION_HEADER.******************************
 .Purpose : This function serve as one time call function of application layer
