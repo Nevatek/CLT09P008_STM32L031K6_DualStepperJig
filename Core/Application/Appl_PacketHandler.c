@@ -25,7 +25,6 @@ PacketHandlerState_t PacketHandler_state;
 
 uint8_t g_PacketBuffer[PACKET_LEN]= {0};
 uint8_t g_BufferSize = 0;
-static bool g_PacketConfigStatus = false;
 static uint32_t g_CountSentTime = 0;
 
 int motor1_Count = 0, motor2_Count = 0;
@@ -192,7 +191,6 @@ void PacketHandler_Process(uint8_t *data)
 	        {
 	            if (!PacketHandler_Decode(&(data[3]), g_BufferSize))
 	            {
-	            	g_PacketConfigStatus = false;
 	                send_error(PACKET_ERR_GENERIC);
 	                return;
 	            }
@@ -200,7 +198,6 @@ void PacketHandler_Process(uint8_t *data)
 	            uint8_t err = validate_cfg(&g_Config);
 	            if (err)
 	            {
-	            	g_PacketConfigStatus = false;
 	                send_error(err);
 	                return;
 	            }
@@ -209,7 +206,6 @@ void PacketHandler_Process(uint8_t *data)
 
 				g_CountSentTime = HAL_GetTick();
 
-	            g_PacketConfigStatus = true;
 	            break;
 	        }
 
@@ -240,14 +236,10 @@ void Appl_PacketHandler_Init(void)
 ******************************************************************************/
 void Appl_PacketHandler_Exe(void)
 {
-	if(g_PacketConfigStatus == true)
+	if((HAL_GetTick() - g_CountSentTime) >= TICK_1_SEC)
 	{
-
-		if((HAL_GetTick() - g_CountSentTime) >= TICK_1_SEC)
-		{
-			g_CountSentTime = HAL_GetTick();
-            send_cycles(motor1_Count, motor2_Count);
-		}
+		g_CountSentTime = HAL_GetTick();
+		send_cycles(motor1_Count, motor2_Count);
 	}
 
 	switch (PacketHandler_state) {
