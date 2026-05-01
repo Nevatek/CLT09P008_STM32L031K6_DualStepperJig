@@ -48,6 +48,8 @@ typedef struct
     uint8_t mode;
     uint8_t ustep;
     uint16_t freq;
+    uint16_t u8StepAngle;/*Enum for values : 0.9 , 1.8 , 2.5 , 2.7 , 3.6 , 7.2 , 7.5 */
+    uint16_t u8StrokeDelayMs;/*Range : 100Ms to 5000Ms , Step : 100Ms*/
 } MotorConfig_t;
 
 typedef struct

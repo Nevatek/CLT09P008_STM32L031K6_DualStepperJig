@@ -30,7 +30,7 @@ typedef struct
 	uint32_t u32NumOfSteps;
 	uint32_t u1HomePosEnabled : 1U;
 	uint32_t u1ApplEnabled : 1U;/*Motor on/off*/
-	uint32_t u16StrokeDelay : 16U;/*Delay between each stroke in MS*/
+	uint32_t u16StrokeDelayMs : 16U;/*Delay between each stroke in MS*/
 	uint32_t : 14U;
 	uint32_t u32Rpm;
 	SYS_OPERATING_MODE m_OperatingMode;

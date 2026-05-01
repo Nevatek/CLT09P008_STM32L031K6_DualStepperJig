@@ -10,6 +10,7 @@ Author Date Description
 /*Aldrin.Rebellow 29/03/2026 Initial Release*/
 #include "main.h"
 #include "Datatype.h"
+#include "Timer.h"
 #include "Drv_DM556.h"
 #include "Appl_PacketHandler.h"
 #include "App_StepperLinearGuide.h"
@@ -19,6 +20,8 @@ Stepper g_StepperMotorX;
 Stepper g_StepperMotorY;
 MTR_APP_PROCESS g_MtrAppProcess_X;
 MTR_APP_PROCESS g_MtrAppProcess_Y;
+TimerTimeOut g_StrokeTimer_X;
+TimerTimeOut g_StrokeTimer_Y;
 /******************************.FUNCTION_HEADER.******************************
 .Purpose : This function serve as one time call function of application layer
 .Returns :
@@ -195,6 +198,20 @@ void App_StepperLinearGuide_Exe(void)
 				{
 					if(STEPPER_MOTOR_STOP == HI_GetMotorState((&(g_StepperMotorX))))
 					{
+						TimeOut_Init(&(g_StrokeTimer_X));
+						TimeOut_Start(&(g_StrokeTimer_X) , pApplCfg->m_AppMotorX.u16StrokeDelayMs);
+						g_MtrAppProcess_X = MTR_APP_MOVE_TO_HOME_COMPLETED;
+					}
+					else
+					{
+						/*NOP*/
+					}
+				}break;
+				case (MTR_APP_MOVE_TO_HOME_COMPLETED):
+				{
+					if(TRUE == TimeOut_IsTimeout(&(g_StrokeTimer_X)))
+					{
+						TimeOut_Stop(&(g_StrokeTimer_X));
 						if(SYS_MOTOR_SYNC == pApplCfg->m_SystemMotorOperatingMode)
 						{
 							g_MtrAppProcess_Y = MTR_APP_MOVE_TO_HOME;/*Motor Y move to home*/
@@ -205,6 +222,10 @@ void App_StepperLinearGuide_Exe(void)
 							/*When motor is stopped*/
 							g_MtrAppProcess_X = MTR_APP_MOVE_TO_STEP;
 						}
+					}
+					else
+					{
+						/*NOP*/
 					}
 				}break;
 				case (MTR_APP_MOVE_TO_STEP):
@@ -219,10 +240,29 @@ void App_StepperLinearGuide_Exe(void)
 				{
 					if(STEPPER_MOTOR_STOP == HI_GetMotorState((&(g_StepperMotorX))))
 					{
+						TimeOut_Init(&(g_StrokeTimer_X));
+						TimeOut_Start(&(g_StrokeTimer_X) , pApplCfg->m_AppMotorX.u16StrokeDelayMs);
+						g_MtrAppProcess_X = MTR_APP_MOVE_TO_STEP_COMPLETED;
+					}
+					else
+					{
+						/*NOP*/
+					}
+				}break;
+				case (MTR_APP_MOVE_TO_STEP_COMPLETED):
+				{
+					if(TRUE == TimeOut_IsTimeout(&(g_StrokeTimer_X)))
+					{
+						TimeOut_Stop(&(g_StrokeTimer_X));
 						if(0xFFFFFFFF > GetInstance_ApplRunTimData()->u32MotorX_CycleCount)
 						{
 							GetInstance_ApplRunTimData()->u32MotorX_CycleCount++;
 						}
+						else
+						{
+							/*NOP*/
+						}
+
 						if(SYS_MOTOR_SYNC == pApplCfg->m_SystemMotorOperatingMode)
 						{
 							g_MtrAppProcess_Y = MTR_APP_MOVE_TO_STEP;/*Motor Y move to step*/
@@ -233,6 +273,10 @@ void App_StepperLinearGuide_Exe(void)
 							/*When motor is stopped*/
 							g_MtrAppProcess_X = MTR_APP_MOVE_TO_HOME;
 						}
+					}
+					else
+					{
+						/*NOP*/
 					}
 				}break;
 				default:
@@ -321,9 +365,23 @@ void App_StepperLinearGuide_Exe(void)
 				{
 					if(STEPPER_MOTOR_STOP == HI_GetMotorState((&(g_StepperMotorY))))
 					{
+						TimeOut_Init(&(g_StrokeTimer_Y));
+						TimeOut_Start(&(g_StrokeTimer_Y) , pApplCfg->m_AppMotorY.u16StrokeDelayMs);
+						g_MtrAppProcess_Y = MTR_APP_MOVE_TO_HOME_COMPLETED;
+					}
+					else
+					{
+						/*NOP*/
+					}
+				}break;
+				case (MTR_APP_MOVE_TO_HOME_COMPLETED):
+				{
+					if(TRUE == TimeOut_IsTimeout(&(g_StrokeTimer_Y)))
+					{
+						TimeOut_Stop(&(g_StrokeTimer_Y));
 						if(SYS_MOTOR_SYNC == pApplCfg->m_SystemMotorOperatingMode)
 						{
-							g_MtrAppProcess_X = MTR_APP_MOVE_TO_STEP;/*Motor Y move to home*/
+							g_MtrAppProcess_X = MTR_APP_MOVE_TO_STEP;/*Motor X move to STEP POS*/
 							g_MtrAppProcess_Y = MTR_APP_IDLE;
 						}
 						else/*INDEPENDEND*/
@@ -331,6 +389,10 @@ void App_StepperLinearGuide_Exe(void)
 							/*When motor is stopped*/
 							g_MtrAppProcess_Y = MTR_APP_MOVE_TO_STEP;
 						}
+					}
+					else
+					{
+						/*NOP*/
 					}
 				}break;
 				case (MTR_APP_MOVE_TO_STEP):
@@ -345,10 +407,29 @@ void App_StepperLinearGuide_Exe(void)
 				{
 					if(STEPPER_MOTOR_STOP == HI_GetMotorState((&(g_StepperMotorY))))
 					{
+						TimeOut_Init(&(g_StrokeTimer_Y));
+						TimeOut_Start(&(g_StrokeTimer_Y) , pApplCfg->m_AppMotorY.u16StrokeDelayMs);
+						g_MtrAppProcess_Y = MTR_APP_MOVE_TO_STEP_COMPLETED;
+					}
+					else
+					{
+						/*NOP*/
+					}
+				}break;
+				case (MTR_APP_MOVE_TO_STEP_COMPLETED):
+				{
+					if(TRUE == TimeOut_IsTimeout(&(g_StrokeTimer_Y)))
+					{
+						TimeOut_Stop(&(g_StrokeTimer_Y));
 						if(0xFFFFFFFF > GetInstance_ApplRunTimData()->u32MotorY_CycleCount)
 						{
 							GetInstance_ApplRunTimData()->u32MotorY_CycleCount++;
 						}
+						else
+						{
+							/*NOP*/
+						}
+
 						if(SYS_MOTOR_SYNC == pApplCfg->m_SystemMotorOperatingMode)
 						{
 							g_MtrAppProcess_X = MTR_APP_MOVE_TO_HOME;/*Motor Y move to step*/
@@ -359,6 +440,10 @@ void App_StepperLinearGuide_Exe(void)
 							/*When motor is stopped*/
 							g_MtrAppProcess_Y = MTR_APP_MOVE_TO_HOME;
 						}
+					}
+					else
+					{
+						/*NOP*/
 					}
 				}break;
 				default:
