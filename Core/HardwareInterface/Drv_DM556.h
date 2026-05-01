@@ -63,7 +63,8 @@ typedef struct
 	uint16_t u8EnablePin;
 	uint8_t bContinousRotationEnable : 1U;
 	uint8_t bHomeSensEnable : 1U;
-	uint8_t : 6U;
+	uint8_t bPulsePinState : 1U;
+	uint8_t : 5U;
 	MOTOR_STATE m_State;
 	void (*Callback_TimerComplete)(void *m_Inst);
 }Stepper;

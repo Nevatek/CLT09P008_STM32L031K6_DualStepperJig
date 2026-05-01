@@ -17,16 +17,17 @@ static double g_fMicroStepDividentVal = 0.0f;
 ******************************************************************************/
 inline void Execute_PulseCallback_MotorX(Stepper *pStepper)
 {
-    HAL_GPIO_TogglePin(pStepper->p_PulsePort, pStepper->u8PulsePin);
+    HAL_GPIO_WritePin(pStepper->p_PulsePort, pStepper->u8PulsePin , pStepper->bPulsePinState);
+    pStepper->bPulsePinState ^= 1U;/*Toggle BIT*/
 
     /* Only increment step count on rising edge (when pin goes HIGH) */
-    if(HAL_GPIO_ReadPin(pStepper->p_PulsePort, pStepper->u8PulsePin) == GPIO_PIN_SET)
+    if(pStepper->bPulsePinState)
     {
         pStepper->u32CurrStepCount++;
 
         /* Check if target steps reached */
-        if(FALSE == pStepper->bContinousRotationEnable &&
-           pStepper->u32CurrStepCount >= pStepper->u32TotalStepCount)
+        if(pStepper->u32CurrStepCount >= pStepper->u32TotalStepCount &&
+        		!pStepper->bContinousRotationEnable)
         {
             Stop_StepperMotor(pStepper);
         }
@@ -39,15 +40,16 @@ inline void Execute_PulseCallback_MotorX(Stepper *pStepper)
 ******************************************************************************/
 inline void Execute_PulseCallback_MotorY(Stepper *pStepper)
 {
-    HAL_GPIO_TogglePin(pStepper->p_PulsePort, pStepper->u8PulsePin);
+    HAL_GPIO_WritePin(pStepper->p_PulsePort, pStepper->u8PulsePin , pStepper->bPulsePinState);
+    pStepper->bPulsePinState ^= 1U;/*Toggle BIT*/
 
     /* Only increment step count on rising edge */
-    if(HAL_GPIO_ReadPin(pStepper->p_PulsePort, pStepper->u8PulsePin) == GPIO_PIN_SET)
+    if(pStepper->bPulsePinState)
     {
         pStepper->u32CurrStepCount++;
 
-        if(FALSE == pStepper->bContinousRotationEnable &&
-           pStepper->u32CurrStepCount >= pStepper->u32TotalStepCount)
+        if(pStepper->u32CurrStepCount >= pStepper->u32TotalStepCount &&
+        		!pStepper->bContinousRotationEnable)
         {
             Stop_StepperMotor(pStepper);
         }

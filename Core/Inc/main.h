@@ -59,6 +59,8 @@ UART_HandleTypeDef* GetInstance_UART2(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define FREE_PIN_Pin GPIO_PIN_5
+#define FREE_PIN_GPIO_Port GPIOB
 #define HOME_SENS_OUT_1_Pin GPIO_PIN_1
 #define HOME_SENS_OUT_1_GPIO_Port GPIOA
 #define HOME_SENS_OUT_1_EXTI_IRQn EXTI0_1_IRQn

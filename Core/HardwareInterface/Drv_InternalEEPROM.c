@@ -20,7 +20,7 @@
 #include "stm32l0xx_hal.h"
 
 /* Private defines -----------------------------------------------------------*/
-#define EEPROM_TIMEOUT          1000U   /**< Timeout in milliseconds */
+#define EEPROM_TIMEOUT_MS          (1000U)   /**< Timeout in milliseconds */
 
 /* Private variables ---------------------------------------------------------*/
 static EEPROM_StatusTypeDef lastError = EEPROM_OK;
@@ -89,7 +89,7 @@ EEPROM_StatusTypeDef Drv_InternalEEPROM_Write(uint16_t addr,
     for (uint16_t i = 0; i < length; i++)
     {
         /* Wait for any previous operation to complete */
-        status = WaitForLastOperation(EEPROM_TIMEOUT);
+        status = WaitForLastOperation(EEPROM_TIMEOUT_MS);
         if (status != EEPROM_OK)
         {
             LockEEPROM();
@@ -113,7 +113,7 @@ EEPROM_StatusTypeDef Drv_InternalEEPROM_Write(uint16_t addr,
     }
     
     /* Wait for final operation to complete */
-    status = WaitForLastOperation(EEPROM_TIMEOUT);
+    status = WaitForLastOperation(EEPROM_TIMEOUT_MS);
     
     /* Lock EEPROM after write */
     LockEEPROM();

@@ -44,9 +44,10 @@ inline void Callback_StepperTimer_MotY(void)
 ******************************************************************************/
 inline void CallBack_HomeSensDetectMotorX(void)
 {
-	if(TRUE == g_StepperMotorX.bHomeSensEnable)
+	if(TRUE == g_StepperMotorX.bHomeSensEnable
+			&& SYS_OPERATING_MODE_AUTO == GetInstance_ApplConfig()->m_AppMotorX.m_OperatingMode)
 	{
-		Stop_StepperMotor(&(g_StepperMotorX));
+		Stop_StepperMotor(&g_StepperMotorX);
 	}
 }
 /******************************.FUNCTION_HEADER.******************************
@@ -56,9 +57,10 @@ inline void CallBack_HomeSensDetectMotorX(void)
 ******************************************************************************/
 inline void CallBack_HomeSensDetectMotorY(void)
 {
-	if(TRUE == g_StepperMotorY.bHomeSensEnable)
+	if(TRUE == g_StepperMotorY.bHomeSensEnable
+			&& SYS_OPERATING_MODE_AUTO == GetInstance_ApplConfig()->m_AppMotorY.m_OperatingMode)
 	{
-		Stop_StepperMotor(&(g_StepperMotorY));
+		Stop_StepperMotor(&g_StepperMotorY);
 	}
 }
 /******************************.FUNCTION_HEADER.******************************
