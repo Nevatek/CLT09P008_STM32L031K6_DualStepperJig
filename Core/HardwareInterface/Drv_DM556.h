@@ -10,9 +10,6 @@
 
 #define DEFAULT_STEPPER_TIMER_FREQ (1000000ULL)/*1000 Khz*/
 
-#define STEPPER_DEFAULT_ANGLE (1.8)
-#define STEPPER_MICROSTEP (64)
-
 typedef enum
 {
 	STEPPER_MOTOR_STOP = 0U,
@@ -46,11 +43,23 @@ typedef enum
 	MOTOR_MS_STEP_1_256 = 256U,
 }MOTOR_MICRO_STEP_SEL;
 
+typedef enum
+{
+	MOTOR_STEP_ANG_0_9 = 0U,
+	MOTOR_STEP_ANG_1_8,
+	MOTOR_STEP_ANG_2_5,
+	MOTOR_STEP_ANG_2_7,
+	MOTOR_STEP_ANG_3_6,
+	MOTOR_STEP_ANG_7_2,
+	MOTOR_STEP_ANG_7_5,
+	MOTOR_STEP_ANG_MAX
+}MOTOR_STEP_ANGLE_SEL;
+
 typedef struct
 {
 	TIM_HandleTypeDef *pTim;
-	uint32_t u32MicroStep;
-	uint32_t u32StepAngle;
+	float fStepAngle;
+	uint32_t fMicroStepDiv;
 	uint32_t u32CurrStepCount;
 	uint32_t u32TotalStepCount;
 	uint32_t u32TimerInputFreq;
@@ -71,7 +80,9 @@ typedef struct
 
 void Execute_PulseCallback_MotorX(Stepper *pStepper);
 void Execute_PulseCallback_MotorY(Stepper *pStepper);
-void Config_StepperTimer(Stepper *pStepper , TIM_HandleTypeDef *pTimer , void *pCallback , MOTOR_MICRO_STEP_SEL m_uStepSel , TMC_MOTOR_MODE m_MotorMode);
+void Config_StepperTimer(Stepper *pStepper , TIM_HandleTypeDef *pTimer ,
+		void *pCallback , MOTOR_STEP_ANGLE_SEL m_MtrAngleSel , MOTOR_MICRO_STEP_SEL m_uStepSel ,
+		TMC_MOTOR_MODE m_MotorMode);
 void Set_RpmOfMotor(Stepper *pStepper , uint32_t u32Rpm);
 void Set_FrequencyOfMotor(Stepper *pStepper , uint32_t u32FrequncyHz);
 void Rotate_StepperSteps(Stepper *pStepper , uint32_t u32Steps ,  uint32_t u32Rpm);

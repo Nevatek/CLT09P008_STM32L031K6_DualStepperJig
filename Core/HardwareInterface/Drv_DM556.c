@@ -9,7 +9,14 @@
 #include "Datatype.h"
 #include "Drv_DM556.h"
 
-static double g_fMicroStepDividentVal = 0.0f;
+static float g_MotorStepAngleTable[MOTOR_STEP_ANG_MAX] ={	/*MOTOR_STEP_ANG_0_9*/0.9,
+															/*MOTOR_STEP_ANG_1_8*/1.8,
+															/*MOTOR_STEP_ANG_2_5*/2.5,
+															/*MOTOR_STEP_ANG_2_7*/2.7,
+															/*MOTOR_STEP_ANG_3_6*/3.6,
+															/*MOTOR_STEP_ANG_7_2*/7.2,
+															/*MOTOR_STEP_ANG_7_5*/7.5
+														};
 /******************************.FUNCTION_HEADER.******************************
 .Purpose : This function serve as one time call function of application layer
 .Returns :
@@ -61,7 +68,8 @@ inline void Execute_PulseCallback_MotorY(Stepper *pStepper)
 .Note : use this function for all major initilization
 ******************************************************************************/
 void Config_StepperTimer(Stepper *pStepper , TIM_HandleTypeDef *pTimer ,
-		void *pCallback , MOTOR_MICRO_STEP_SEL m_uStepSel , TMC_MOTOR_MODE m_MotorMode)
+		void *pCallback , MOTOR_STEP_ANGLE_SEL m_MtrAngleSel , MOTOR_MICRO_STEP_SEL m_uStepSel ,
+		TMC_MOTOR_MODE m_MotorMode)
 {
 	uint32_t u32Prescalar = 0;
 	uint32_t u32Timer_clk = 0U;
@@ -69,13 +77,15 @@ void Config_StepperTimer(Stepper *pStepper , TIM_HandleTypeDef *pTimer ,
 	uint8_t u8MS2 = ((m_uStepSel >> 1U) & 0x01);
 	(void)u8MS1;/*Ignore to remove warnig*/
 	(void)u8MS2;;/*Ignore to remove warnig*/
+
+	pStepper->fStepAngle = g_MotorStepAngleTable[m_MtrAngleSel];
 	pStepper->pTim = pTimer;
 	pStepper->Callback_TimerComplete = pCallback;
 
     // Get APB1 or APB2 timer clock
     u32Timer_clk = HAL_RCC_GetPCLK1Freq();
 
-	g_fMicroStepDividentVal = (float)m_uStepSel;
+    pStepper->fMicroStepDiv = (uint32_t)m_uStepSel;
 
 	u32Prescalar = (uint32_t)((u32Timer_clk / DEFAULT_STEPPER_TIMER_FREQ) - 1U);
 	__HAL_TIM_SET_PRESCALER(pStepper->pTim , u32Prescalar);
@@ -137,29 +147,37 @@ void Set_FrequencyOfMotor(Stepper *pStepper , uint32_t u32FrequncyHz)
 ******************************************************************************/
 void Set_RpmOfMotor(Stepper *pStepper, uint32_t u32Rpm)
 {
-    uint32_t u32Arr = 0;
-    double u32Freq = 0.0;
-    double fStepsPerRev = 0.0;
+    uint32_t u32Arr = 0U;
+    float u32Freq = 0.0;
+    float fStepsPerRev = 0.0;
 
     /* Calculate steps per revolution */
-    fStepsPerRev = 360.0 / ((double)STEPPER_DEFAULT_ANGLE / (double)g_fMicroStepDividentVal);
-
-    /* Calculate required step frequency (steps/second) */
-    u32Freq = ((double)u32Rpm / 60.0) * fStepsPerRev;
-
-    /* GPIO toggle needs 2× timer frequency (rising + falling edge per step) */
-    u32Freq *= 2.0;
-
-    if(u32Freq > 0.0)
+    if(0U < pStepper->fStepAngle && 0U < pStepper->fMicroStepDiv)
     {
-        u32Arr = (uint32_t)(DEFAULT_STEPPER_TIMER_FREQ / u32Freq);
-        u32Arr -= 1U;
-    }
+    	fStepsPerRev = 360.0 / ((float)pStepper->fStepAngle / (float)pStepper->fMicroStepDiv);
+        /* Calculate required step frequency (steps/second) */
+        u32Freq = ((float)u32Rpm / 60.0) * fStepsPerRev;
 
-    DisableStepper(pStepper);
-    HAL_TIM_Base_Stop_IT(pStepper->pTim);
-    __HAL_TIM_SET_AUTORELOAD(pStepper->pTim, u32Arr);
-    __HAL_TIM_SET_COUNTER(pStepper->pTim, 0);
+        /* GPIO toggle needs 2× timer frequency (rising + falling edge per step) */
+        u32Freq *= 2.0;
+
+        if(0U < u32Freq)
+        {
+            u32Arr = (uint32_t)((DEFAULT_STEPPER_TIMER_FREQ / u32Freq) - 1U);
+            DisableStepper(pStepper);
+            HAL_TIM_Base_Stop_IT(pStepper->pTim);
+            __HAL_TIM_SET_AUTORELOAD(pStepper->pTim, u32Arr);
+            __HAL_TIM_SET_COUNTER(pStepper->pTim, 0);
+        }
+        else
+        {
+        	/*NOP*/
+        }
+    }
+    else
+    {
+    	/*NOP*/
+    }
 }
 /******************************.FUNCTION_HEADER.******************************
 .Purpose : This function serve as one time call function of application layer

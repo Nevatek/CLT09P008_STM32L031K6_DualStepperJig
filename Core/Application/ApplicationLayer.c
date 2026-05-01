@@ -62,6 +62,9 @@ void ApplicationLayer_Init(void)
 		g_Appl_NvmData.m_AppMotorX.u1HomePosEnabled = TRUE;
 		g_Appl_NvmData.m_AppMotorX.u32NumOfSteps = 360U;
 
+		g_Appl_NvmData.m_AppMotorX.u16StrokeDelay = DEFAULT_MOTOR_STROKE_DELAY_MS;
+		g_Appl_NvmData.m_AppMotorX.m_MtrAngleSel = MOTOR_STEP_ANG_1_8;
+
 		g_Appl_NvmData.m_AppMotorY.m_Direction = Rotate_Clockwise;
 		g_Appl_NvmData.m_AppMotorY.m_MicroStep = MOTOR_MS_STEP_1_64;
 		g_Appl_NvmData.m_AppMotorY.m_MtrState = STEPPER_MOTOR_STOP;
@@ -70,6 +73,11 @@ void ApplicationLayer_Init(void)
 		g_Appl_NvmData.m_AppMotorY.u1ApplEnabled = FALSE;
 		g_Appl_NvmData.m_AppMotorY.u1HomePosEnabled = TRUE;
 		g_Appl_NvmData.m_AppMotorY.u32NumOfSteps = 360U;
+
+		g_Appl_NvmData.m_AppMotorY.u16StrokeDelay = DEFAULT_MOTOR_STROKE_DELAY_MS;
+		g_Appl_NvmData.m_AppMotorY.m_MtrAngleSel = MOTOR_STEP_ANG_1_8;
+
+
 		Drv_InternalEEPROM_Write((uint16_t)EEPROM_START_ADDR ,
 				(const uint8_t*)&(g_Appl_NvmData) , sizeof(g_Appl_NvmData));
 
@@ -276,6 +284,9 @@ void Callback_Appl_ConfigUpdated(SystemCofig_t *pConfig)
 	g_Appl_NvmData.m_AppMotorX.u32NumOfSteps = pConfig->motor1.steps;
 	g_Appl_NvmData.m_AppMotorX.m_MtrState = STEPPER_MOTOR_STOP;
 
+	g_Appl_NvmData.m_AppMotorX.m_MtrAngleSel = 0;////////////////////////////////////////////////////////////////////
+	g_Appl_NvmData.m_AppMotorX.u16StrokeDelay = DEFAULT_MOTOR_STROKE_DELAY_MS;/////////////////////////////
+
 	/*MOTOR Y*/
 	g_Appl_NvmData.m_AppMotorY.m_Direction = (ROTATION_DIRECTION)pConfig->motor2.dir;
 	switch(pConfig->motor2.ustep)
@@ -324,6 +335,9 @@ void Callback_Appl_ConfigUpdated(SystemCofig_t *pConfig)
 	g_Appl_NvmData.m_AppMotorY.u1HomePosEnabled = pConfig->motor2.home;
 	g_Appl_NvmData.m_AppMotorY.u32NumOfSteps = pConfig->motor2.steps;
 	g_Appl_NvmData.m_AppMotorY.m_MtrState = STEPPER_MOTOR_STOP;
+
+	g_Appl_NvmData.m_AppMotorY.m_MtrAngleSel = 0;////////////////////////////////////////////////////////////////////
+	g_Appl_NvmData.m_AppMotorY.u16StrokeDelay = DEFAULT_MOTOR_STROKE_DELAY_MS;/////////////////////////////
 
 	Drv_InternalEEPROM_Write((uint16_t)EEPROM_START_ADDR ,
 			(const uint8_t*)&(g_Appl_NvmData) , sizeof(g_Appl_NvmData));

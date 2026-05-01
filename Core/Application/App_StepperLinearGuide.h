@@ -10,6 +10,7 @@
 
 
 #define DEFAULT_HOME_POS_OFFSET_STEPS	(360U)
+#define DEFAULT_MOTOR_STROKE_DELAY_MS	(1000U)
 
 typedef enum
 {

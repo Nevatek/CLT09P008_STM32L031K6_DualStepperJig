@@ -71,6 +71,10 @@ inline void CallBack_HomeSensDetectMotorY(void)
 void App_StepperLinearGuide_Init(void)
 {
 	APPL_CONFIG *pApplCfg = GetInstance_ApplConfig();
+	DisableStepper(&(g_StepperMotorX));
+	DisableStepper(&(g_StepperMotorY));
+	Stop_StepperMotor(&g_StepperMotorX);
+	Stop_StepperMotor(&g_StepperMotorY);
 	/*Config Stepper 1*/
 	g_StepperMotorX.p_DirPort = MOT1_DIR__GPIO_Port;
 	g_StepperMotorX.p_EnablePort = MOT1_DISABLE__GPIO_Port;
@@ -80,7 +84,7 @@ void App_StepperLinearGuide_Init(void)
 	g_StepperMotorX.u8PulsePin = MOT1_PUL__Pin;
 	g_StepperMotorX.bHomeSensEnable = pApplCfg->m_AppMotorX.u1HomePosEnabled;
 	Config_StepperTimer(&(g_StepperMotorX) ,
-			GetInstance_Timer2() , &Execute_PulseCallback_MotorX ,
+			GetInstance_Timer2() , &Execute_PulseCallback_MotorX , pApplCfg->m_AppMotorX.m_MtrAngleSel ,
 			pApplCfg->m_AppMotorX.m_MicroStep , TMC_STEALTH_CHOP);
 
 	/*Config Stepper 2*/
@@ -92,11 +96,8 @@ void App_StepperLinearGuide_Init(void)
 	g_StepperMotorY.u8PulsePin = MOT2_PUL__Pin;
 	g_StepperMotorY.bHomeSensEnable = pApplCfg->m_AppMotorY.u1HomePosEnabled;
 	Config_StepperTimer(&(g_StepperMotorY) ,
-			GetInstance_Timer21() , &Execute_PulseCallback_MotorY ,
+			GetInstance_Timer21() , &Execute_PulseCallback_MotorY , pApplCfg->m_AppMotorY.m_MtrAngleSel ,
 			pApplCfg->m_AppMotorY.m_MicroStep , TMC_STEALTH_CHOP);
-
-	DisableStepper(&(g_StepperMotorX));
-	DisableStepper(&(g_StepperMotorY));
 }
 /******************************.FUNCTION_HEADER.******************************
 .Purpose : This function serve as one time call function of application layer
