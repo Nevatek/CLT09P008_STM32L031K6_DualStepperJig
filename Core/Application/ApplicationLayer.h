@@ -59,4 +59,6 @@ void ApplicationLayer_Exe(void);
 APPL_CONFIG* GetInstance_ApplConfig(void);
 RUN_TIME_DATA* GetInstance_ApplRunTimData(void);
 void Callback_Appl_ConfigUpdated(SystemCofig_t *pConfig);
+void Callback_Appl_ResetCycleCount_MotorX(void);
+void Callback_Appl_ResetCycleCount_MotorY(void);
 #endif /* APPLICATION_APPLICATIONLAYER_H_ */

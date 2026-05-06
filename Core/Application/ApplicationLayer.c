@@ -227,6 +227,28 @@ RUN_TIME_DATA* GetInstance_ApplRunTimData(void)
 .Returns :
 .Note : use this function for all major initilization
 ******************************************************************************/
+void Callback_Appl_ResetCycleCount_MotorX(void)
+{
+	g_ApplRunTimeData.u32MotorX_CycleCount = 0U;
+	Drv_InternalEEPROM_Write((uint16_t)EEPROM_START_ADDR + 64U,
+			(const uint8_t*)&(g_ApplRunTimeData) , sizeof(g_ApplRunTimeData));
+}
+/******************************.FUNCTION_HEADER.******************************
+.Purpose : This function serve as one time call function of application layer
+.Returns :
+.Note : use this function for all major initilization
+******************************************************************************/
+void Callback_Appl_ResetCycleCount_MotorY(void)
+{
+	g_ApplRunTimeData.u32MotorY_CycleCount = 0U;
+	Drv_InternalEEPROM_Write((uint16_t)EEPROM_START_ADDR + 64U,
+			(const uint8_t*)&(g_ApplRunTimeData) , sizeof(g_ApplRunTimeData));
+}
+/******************************.FUNCTION_HEADER.******************************
+.Purpose : This function serve as one time call function of application layer
+.Returns :
+.Note : use this function for all major initilization
+******************************************************************************/
 void Callback_Appl_ConfigUpdated(SystemCofig_t *pConfig)
 {
 	/*Turn OFF all motors*/
@@ -352,11 +374,6 @@ void Callback_Appl_ConfigUpdated(SystemCofig_t *pConfig)
 	Drv_InternalEEPROM_Write((uint16_t)EEPROM_START_ADDR ,
 			(const uint8_t*)&(g_Appl_NvmData) , sizeof(g_Appl_NvmData));
 	memcpy(&(g_ApplConfig) , &(g_Appl_NvmData) , sizeof(g_ApplConfig));/*Copy NVM data*/
-
-	g_ApplRunTimeData.u32MotorX_CycleCount = 0U;
-	g_ApplRunTimeData.u32MotorY_CycleCount = 0U;
-	Drv_InternalEEPROM_Write((uint16_t)EEPROM_START_ADDR + 64U,
-			(const uint8_t*)&(g_ApplRunTimeData) , sizeof(g_ApplRunTimeData));
 
 	App_StepperLinearGuide_Init();
 }

@@ -29,6 +29,8 @@ static uint32_t g_CountSentTime = 0;
 
 int motor1_Count = 0, motor2_Count = 0;
 extern void Callback_Appl_ConfigUpdated(SystemCofig_t *pConfig);
+extern void Callback_Appl_ResetCycleCount_MotorX(void);
+extern void Callback_Appl_ResetCycleCount_MotorY(void);
 /******************************.FUNCTION_HEADER.******************************
 .Purpose : This function serve as one time call function of application layer
 .Returns :
@@ -214,14 +216,14 @@ void PacketHandler_Process()
 		if (mask & 0x01)
 		{
 			/* reset Motor 1 */
-			//TODO: Call function to reset count
+			Callback_Appl_ResetCycleCount_MotorX();
 			send_ack();
 
 		}
 		else if (mask & 0x02)
 		{
 			/* reset Motor 2 */
-			//TODO: Call function to reset count
+			Callback_Appl_ResetCycleCount_MotorY();
 			send_ack();
 
 		}
