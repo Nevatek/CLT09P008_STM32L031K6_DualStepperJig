@@ -17,6 +17,7 @@
 #define PACKET_CMD_ACK 				0x02
 #define PACKET_CMD_ERR 				0x03
 #define PACKET_CMD_CYC 				0x04
+#define PACKET_CMD_RST				0x05
 
 #define PACKET_ERR_INVALID_STEPS  	0x01
 #define PACKET_ERR_INVALID_FREQ   	0x02
@@ -26,7 +27,7 @@
 #define TICK_1_SEC 1000U
 
 #define FIXED_LEN	5U
-#define PAYLOAD_LEN 17U
+#define PAYLOAD_LEN 25U
 #define PACKET_LEN	(PAYLOAD_LEN + FIXED_LEN)
 
 #define PACKET_MAX_LEN	128
