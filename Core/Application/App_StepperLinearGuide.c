@@ -76,8 +76,7 @@ void App_StepperLinearGuide_Init(void)
 	APPL_CONFIG *pApplCfg = GetInstance_ApplConfig();
 	DisableStepper(&(g_StepperMotorX));
 	DisableStepper(&(g_StepperMotorY));
-	Stop_StepperMotor(&g_StepperMotorX);
-	Stop_StepperMotor(&g_StepperMotorY);
+
 	/*Config Stepper 1*/
 	g_StepperMotorX.p_DirPort = MOT1_DIR__GPIO_Port;
 	g_StepperMotorX.p_EnablePort = MOT1_DISABLE__GPIO_Port;
