@@ -78,7 +78,15 @@ void Config_StepperTimer(Stepper *pStepper , TIM_HandleTypeDef *pTimer ,
 	(void)u8MS1;/*Ignore to remove warnig*/
 	(void)u8MS2;;/*Ignore to remove warnig*/
 
-	pStepper->fStepAngle = g_MotorStepAngleTable[m_MtrAngleSel];
+	if(MOTOR_STEP_ANG_0_9 <= m_MtrAngleSel && MOTOR_STEP_ANG_MAX > m_MtrAngleSel)
+	{
+		pStepper->fStepAngle = g_MotorStepAngleTable[m_MtrAngleSel];
+	}
+	else
+	{
+		pStepper->fStepAngle = g_MotorStepAngleTable[MOTOR_STEP_ANG_0_9];
+	}
+
 	pStepper->pTim = pTimer;
 	pStepper->Callback_TimerComplete = pCallback;
 

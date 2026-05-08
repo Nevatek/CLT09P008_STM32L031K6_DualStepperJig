@@ -8,7 +8,7 @@
 #ifndef APPLICATION_APPLICATIONLAYER_H_
 #define APPLICATION_APPLICATIONLAYER_H_
 
-#define FLASH_INIT_FLAG 	(0xAA)
+#define FLASH_INIT_FLAG 	(0xAB)
 #define FLASH_DEFAULT_FLAG 	(0xFF)
 
 #define NVM_RUN_TIME_DATA_SAVE_INTERVEL_MS (5000U)
@@ -28,11 +28,11 @@ typedef enum
 typedef struct
 {
 	uint32_t u32NumOfSteps;
-	uint32_t u1HomePosEnabled : 1U;
-	uint32_t u1ApplEnabled : 1U;/*Motor on/off*/
-	uint32_t u16StrokeDelayMs : 16U;/*Delay between each stroke in MS*/
-	uint32_t : 14U;
 	uint32_t u32Rpm;
+	uint16_t u16StrokeDelayMs;
+	uint8_t u1ApplEnabled;
+	uint8_t u1HomePosEnabled;
+
 	SYS_OPERATING_MODE m_OperatingMode;
 	MOTOR_MICRO_STEP_SEL m_MicroStep;
 	MOTOR_STEP_ANGLE_SEL m_MtrAngleSel;
